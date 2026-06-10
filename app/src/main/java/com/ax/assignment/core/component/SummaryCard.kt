@@ -39,6 +39,7 @@ import com.ax.assignment.core.theme.HomeProgressFill
 import com.ax.assignment.core.theme.Surface
 import com.ax.assignment.core.theme.WarningOrange
 import com.ax.assignment.core.util.toCurrencyString
+import kotlin.math.roundToInt
 
 @Composable
 fun SummaryCard(
@@ -49,7 +50,8 @@ fun SummaryCard(
     modifier: Modifier = Modifier,
 ) {
     val exceededAmount = (totalExpense - totalIncome).coerceAtLeast(0L)
-    val percent = (budgetRatio * 100).toInt()
+    // Figma 코멘트 정책: % 소수점은 반올림 (최소 1% 보정 없음)
+    val percent = (budgetRatio * 100).roundToInt()
     val targetFraction = if (isExceeded) 1f else budgetRatio.coerceIn(0f, 1f)
     val progressFraction by animateFloatAsState(
         targetValue = targetFraction,
