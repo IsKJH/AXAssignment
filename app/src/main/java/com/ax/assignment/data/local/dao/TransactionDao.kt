@@ -11,9 +11,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TransactionDao {
-    @Query("SELECT * FROM transactions ORDER BY date DESC")
-    fun getAll(): Flow<List<TransactionEntity>>
-
     @Query("SELECT * FROM transactions WHERE date >= :startMs AND date <= :endMs ORDER BY date DESC")
     fun getByDateRange(startMs: Long, endMs: Long): Flow<List<TransactionEntity>>
 
@@ -28,9 +25,6 @@ interface TransactionDao {
 
     @Query("SELECT categoryId, SUM(amount) as total FROM transactions WHERE type = 'EXPENSE' AND date >= :startMs AND date <= :endMs GROUP BY categoryId")
     fun getExpenseByCategory(startMs: Long, endMs: Long): Flow<List<CategoryTotal>>
-
-    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'EXPENSE' AND date >= :startMs AND date <= :endMs")
-    fun getTotalExpenseInRange(startMs: Long, endMs: Long): Flow<Long?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(transaction: TransactionEntity): Long

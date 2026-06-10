@@ -22,20 +22,6 @@ class TransactionRepositoryImpl(
     private val categoryDao: CategoryDao,
 ) : TransactionRepository {
 
-    override fun getAll(): Flow<List<Transaction>> =
-        transactionDao.getAll()
-            .combine(categoryDao.getAll()) { txEntities, catEntities ->
-                val catMap = catEntities.associateBy { it.id }
-                txEntities.map { tx ->
-                    tx.toDomain(tx.categoryId?.let { catMap[it]?.toDomain() })
-                }
-            }
-
-    override fun getByMonth(year: Int, month: Int): Flow<List<Transaction>> {
-        val (start, end) = monthRange(year, month)
-        return getByDateRangeMillis(start, end)
-    }
-
     override fun getByDateRange(startDate: LocalDate, endDate: LocalDate): Flow<List<Transaction>> {
         val (start, end) = dateRange(startDate, endDate)
         return getByDateRangeMillis(start, end)
@@ -51,16 +37,6 @@ class TransactionRepositoryImpl(
             }
     }
 
-    override fun getMonthlyIncome(year: Int, month: Int): Flow<Long> {
-        val (start, end) = monthRange(year, month)
-        return transactionDao.getTotalIncome(start, end).map { it ?: 0L }
-    }
-
-    override fun getMonthlyExpense(year: Int, month: Int): Flow<Long> {
-        val (start, end) = monthRange(year, month)
-        return transactionDao.getTotalExpense(start, end).map { it ?: 0L }
-    }
-
     override fun getIncomeByDateRange(startDate: LocalDate, endDate: LocalDate): Flow<Long> {
         val (start, end) = dateRange(startDate, endDate)
         return transactionDao.getTotalIncome(start, end).map { it ?: 0L }
@@ -69,11 +45,6 @@ class TransactionRepositoryImpl(
     override fun getExpenseByDateRange(startDate: LocalDate, endDate: LocalDate): Flow<Long> {
         val (start, end) = dateRange(startDate, endDate)
         return transactionDao.getTotalExpense(start, end).map { it ?: 0L }
-    }
-
-    override fun getExpenseByCategory(year: Int, month: Int): Flow<List<CategorySummary>> {
-        val (start, end) = monthRange(year, month)
-        return getExpenseByCategoryMillis(start, end)
     }
 
     override fun getExpenseByCategory(startDate: LocalDate, endDate: LocalDate): Flow<List<CategorySummary>> {
@@ -103,20 +74,6 @@ class TransactionRepositoryImpl(
                     categorizedTotals
                 }
             }
-    }
-
-    override fun getRecentMonthsExpense(year: Int, month: Int, count: Int): Flow<List<MonthlyExpense>> {
-        if (count <= 0) return flowOf(emptyList())
-        val base = LocalDate.of(year, month, 1)
-        val months = (0 until count).map { offset ->
-            val d = base.minusMonths((count - 1 - offset).toLong())
-            Triple(d.year, d.monthValue, getMonthlyExpense(d.year, d.monthValue))
-        }
-        return combine(months.map { it.third }) { totals ->
-            months.mapIndexed { idx, (y, m, _) ->
-                MonthlyExpense(year = y, month = m, total = totals[idx])
-            }
-        }
     }
 
     override fun getRecentPeriodsExpense(startDate: LocalDate, count: Int): Flow<List<MonthlyExpense>> {
@@ -214,11 +171,6 @@ class TransactionRepositoryImpl(
 
     private fun LocalDateTime.toEpochMillis(): Long =
         atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-
-    private fun monthRange(year: Int, month: Int): Pair<Long, Long> {
-        val start = LocalDate.of(year, month, 1)
-        return dateRange(start, start.plusMonths(1).minusDays(1))
-    }
 
     private fun dateRange(startDate: LocalDate, endDate: LocalDate): Pair<Long, Long> {
         val start = startDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()

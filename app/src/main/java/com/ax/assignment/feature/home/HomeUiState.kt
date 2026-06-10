@@ -25,7 +25,6 @@ data class HomeUiState(
 }
 
 sealed class HomeEvent {
-    data class DeleteTransaction(val id: Long) : HomeEvent()
     object PrevMonth : HomeEvent()
     object NextMonth : HomeEvent()
 }

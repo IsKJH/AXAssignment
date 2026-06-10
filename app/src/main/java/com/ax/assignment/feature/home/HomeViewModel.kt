@@ -56,16 +56,8 @@ class HomeViewModel(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
     fun onEvent(event: HomeEvent) = when (event) {
-        is HomeEvent.DeleteTransaction -> deleteTransaction(event.id)
         HomeEvent.PrevMonth -> moveToPrevMonth()
         HomeEvent.NextMonth -> moveToNextMonth()
-    }
-
-    private fun deleteTransaction(id: Long) {
-        viewModelScope.launch {
-            val tx = repo.getById(id) ?: return@launch
-            repo.delete(tx)
-        }
     }
 
     private fun moveToPrevMonth() {

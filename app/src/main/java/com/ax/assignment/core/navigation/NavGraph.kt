@@ -16,7 +16,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
 import com.ax.assignment.core.component.BottomNavBar
-import com.ax.assignment.core.theme.SplashBackground
 import com.ax.assignment.core.theme.Surface
 import com.ax.assignment.feature.category.CategoryManageScreen
 import com.ax.assignment.feature.home.HomeScreen
@@ -36,8 +35,6 @@ fun NavGraph(navController: NavHostController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    val containerColor = if (currentRoute == Screen.Splash.route) SplashBackground else Surface
-
     Scaffold(
         bottomBar = {
             if (currentRoute in bottomBarRoutes) {
@@ -47,7 +44,7 @@ fun NavGraph(navController: NavHostController) {
                 )
             }
         },
-        containerColor = containerColor,
+        containerColor = Surface,
     ) { paddingValues ->
         NavHost(
             navController = navController,
