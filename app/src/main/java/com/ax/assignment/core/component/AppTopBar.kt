@@ -55,7 +55,8 @@ fun AppTopBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(44.dp)
+                // Figma top-bar: 좌우 16 + 상하 12 패딩 → 높이 56
+                .height(56.dp)
                 .background(Surface)
                 .padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -64,7 +65,7 @@ fun AppTopBar(
             Box(
                 modifier = Modifier
                     .width(64.dp)
-                    .height(44.dp),
+                    .height(56.dp),
                 contentAlignment = Alignment.CenterStart,
             ) {
                 if (onBack != null) {
@@ -96,7 +97,7 @@ fun AppTopBar(
             Row(
                 modifier = Modifier
                     .width(64.dp)
-                    .height(44.dp),
+                    .height(56.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.End,
             ) {
