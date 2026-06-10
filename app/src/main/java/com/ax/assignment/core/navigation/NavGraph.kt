@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -45,6 +46,9 @@ fun NavGraph(navController: NavHostController) {
             }
         },
         containerColor = Surface,
+        // Each screen handles its own status-bar inset (statusBarsPadding in top bars);
+        // default Scaffold insets would double the top gap
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) { paddingValues ->
         NavHost(
             navController = navController,
