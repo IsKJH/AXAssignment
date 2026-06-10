@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.ax.assignment.BudgetApplication
 import com.ax.assignment.data.repository.CategoryRepository
 import com.ax.assignment.data.repository.TransactionRepository
+import com.ax.assignment.domain.model.RecurringScope
 import com.ax.assignment.domain.model.Transaction
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

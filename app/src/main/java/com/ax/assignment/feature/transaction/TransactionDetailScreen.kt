@@ -72,6 +72,7 @@ import com.ax.assignment.core.theme.Surface
 import com.ax.assignment.core.theme.TextDefault
 import com.ax.assignment.core.theme.TextDescription
 import com.ax.assignment.domain.model.Category
+import com.ax.assignment.domain.model.RecurringScope
 import com.ax.assignment.domain.model.Transaction
 import com.ax.assignment.domain.model.TransactionType
 import java.time.LocalDate

@@ -1,9 +1,8 @@
 package com.ax.assignment.feature.statistics
 
 import com.ax.assignment.domain.model.CategorySummary
+import com.ax.assignment.domain.model.MonthlyExpense
 import java.time.LocalDate
-
-data class MonthlyExpense(val year: Int, val month: Int, val total: Long)
 
 data class CategoryComparison(
     val summary: CategorySummary,

@@ -1,6 +1,7 @@
 package com.ax.assignment.feature.transaction
 
 import com.ax.assignment.domain.model.Category
+import com.ax.assignment.domain.model.RecurringScope
 import com.ax.assignment.domain.model.Transaction
 import com.ax.assignment.domain.model.TransactionType
 import java.time.LocalDateTime
@@ -31,8 +32,6 @@ data class TransactionDetailUiState(
             editIsRecurring != transaction.isRecurring
         )
 }
-
-enum class RecurringScope { THIS_MONTH, THIS_AND_FUTURE, ALL }
 
 sealed class TransactionDetailEvent {
     data class Delete(val scope: RecurringScope? = null) : TransactionDetailEvent()

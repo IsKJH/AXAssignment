@@ -2,8 +2,8 @@ package com.ax.assignment.data.repository
 
 import com.ax.assignment.domain.model.CategorySummary
 import com.ax.assignment.domain.model.Transaction
-import com.ax.assignment.feature.statistics.MonthlyExpense
-import com.ax.assignment.feature.transaction.RecurringScope
+import com.ax.assignment.domain.model.MonthlyExpense
+import com.ax.assignment.domain.model.RecurringScope
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 

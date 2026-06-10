@@ -7,8 +7,8 @@ import com.ax.assignment.data.mapper.toEntity
 import com.ax.assignment.domain.model.CategorySummary
 import com.ax.assignment.domain.model.Transaction
 import com.ax.assignment.domain.model.TransactionType
-import com.ax.assignment.feature.statistics.MonthlyExpense
-import com.ax.assignment.feature.transaction.RecurringScope
+import com.ax.assignment.domain.model.MonthlyExpense
+import com.ax.assignment.domain.model.RecurringScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
