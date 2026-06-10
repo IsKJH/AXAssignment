@@ -66,7 +66,7 @@ class TransactionDetailViewModel(
                     editMemo = tx.memo,
                     editCategory = tx.category,
                     editDate = tx.date,
-                    editIsRecurring = false,
+                    editIsRecurring = tx.isRecurring,
                 )
             } else {
                 _uiState.value = _uiState.value.copy(isEditing = false)
