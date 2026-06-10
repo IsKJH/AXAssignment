@@ -184,16 +184,18 @@ private fun DonutSection(uiState: StatisticsUiState) {
         categoryColor(summary) to ratio
     }
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        // Figma 488:898 (SVG 실측): ring stroke 18, inner disc 125 → 9.5dp white gap
         DonutChart(
             segments = segments,
             diameter = 180.dp,
-            strokeWidth = 26.dp,
+            strokeWidth = 18.dp,
+            centerDiameter = 125.dp,
             emptyColor = Color(0xFFEEEEEE),
             centerContent = {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = "총 지출",
-                        fontSize = 14.sp,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
                         color = TextDefault,
                     )

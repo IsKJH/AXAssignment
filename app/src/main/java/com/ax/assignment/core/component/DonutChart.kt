@@ -5,10 +5,10 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.draw.shadow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -33,6 +33,7 @@ fun DonutChart(
     diameter: Dp = 136.dp,
     strokeWidth: Dp = 26.dp,
     emptyColor: Color = TrackGray,
+    centerDiameter: Dp = diameter - strokeWidth * 2,
     centerContent: @Composable () -> Unit = {},
 ) {
     // Sweep-in animation: segments draw clockwise from the top on (re)entry
@@ -87,12 +88,12 @@ fun DonutChart(
                 consumed += sweep
             }
         }
-        // Figma 488:548 — inner white disc with a soft drop shadow over the ring
+        // Figma 488:898 — inner white disc (1dp #EEE border) floating inside the ring hole
         Box(
             modifier = Modifier
-                .size(diameter - strokeWidth * 2)
-                .shadow(4.dp, CircleShape, clip = false)
-                .background(Color.White, CircleShape),
+                .size(centerDiameter)
+                .background(Color.White, CircleShape)
+                .border(1.dp, Color(0xFFEEEEEE), CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             centerContent()
