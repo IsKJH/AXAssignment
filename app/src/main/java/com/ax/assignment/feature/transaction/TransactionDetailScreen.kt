@@ -515,6 +515,7 @@ private fun EditingContent(
             enabled = isSaveEnabled,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
                 .fillMaxWidth()
                 .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
                 .height(48.dp),

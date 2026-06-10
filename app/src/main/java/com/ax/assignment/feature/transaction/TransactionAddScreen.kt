@@ -230,6 +230,7 @@ fun TransactionAddContent(
                 onClick = { onEvent(TransactionEvent.Save) },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
                     .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
             )
         }
