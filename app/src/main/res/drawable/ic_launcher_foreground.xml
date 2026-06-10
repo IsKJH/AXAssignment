@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Splash logo centered inside the adaptive icon safe zone -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/img_splash_logo"
+    android:insetLeft="30%"
+    android:insetTop="30%"
+    android:insetRight="30%"
+    android:insetBottom="30%" />
