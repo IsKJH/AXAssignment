@@ -4,8 +4,11 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.shadow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -84,7 +87,16 @@ fun DonutChart(
                 consumed += sweep
             }
         }
-        centerContent()
+        // Figma 488:548 — inner white disc with a soft drop shadow over the ring
+        Box(
+            modifier = Modifier
+                .size(diameter - strokeWidth * 2)
+                .shadow(4.dp, CircleShape, clip = false)
+                .background(Color.White, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            centerContent()
+        }
     }
 }
 

@@ -615,8 +615,7 @@ internal fun TypeToggle(type: TransactionType, onTypeChange: (TransactionType) -
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-                    .padding(3.dp)
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(RoundedCornerShape(8.dp))
                     .then(if (isSel) Modifier.background(selBg) else Modifier)
                     .clickable { onTypeChange(t) },
                 contentAlignment = Alignment.Center,
