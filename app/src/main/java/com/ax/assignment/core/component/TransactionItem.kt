@@ -32,6 +32,7 @@ import com.ax.assignment.core.theme.HomeExpenseAmount
 import com.ax.assignment.core.theme.HomeIncomeAmount
 import com.ax.assignment.core.theme.NavigationOff
 import com.ax.assignment.core.theme.TextDefault
+import com.ax.assignment.core.theme.TextDescription
 import com.ax.assignment.core.util.toCurrencyString
 import com.ax.assignment.domain.model.Category
 import com.ax.assignment.domain.model.Transaction
@@ -48,9 +49,10 @@ fun TransactionItem(
     val amountColor = if (isIncome) HomeIncomeAmount else HomeExpenseAmount
     val amountPrefix = if (isIncome) "+" else "-"
     val categoryLabel = transaction.category?.name ?: if (isIncome) "수입" else "미분류"
+    // Uncategorized falls back to gray, matching the statistics screen
     val dotColor = transaction.category?.let {
         runCatching { Color(android.graphics.Color.parseColor(it.colorHex)) }.getOrElse { NavigationOff }
-    } ?: HomeIncomeAmount
+    } ?: TextDescription
 
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
