@@ -158,6 +158,19 @@ class TransactionRepositoryImpl(
         }
     }
 
+    // Convert an existing normal transaction into a recurring anchor (+11 future instances)
+    override suspend fun registerRecurring(transaction: Transaction) {
+        val anchor = transaction.copy(isRecurring = true, seriesId = transaction.id)
+        transactionDao.update(anchor.toEntity())
+        val futureInstances = (1L until RECURRING_MONTHS).map { offset ->
+            anchor.toEntity().copy(
+                id = 0L,
+                date = anchor.date.plusMonths(offset),
+            )
+        }
+        transactionDao.insertAll(futureInstances)
+    }
+
     override suspend fun unregisterRecurring(transaction: Transaction) {
         val seriesId = transaction.seriesId
         if (seriesId != null) {

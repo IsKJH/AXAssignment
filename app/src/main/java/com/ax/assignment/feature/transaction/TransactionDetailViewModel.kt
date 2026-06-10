@@ -141,10 +141,11 @@ class TransactionDetailViewModel(
                 isRecurring = s.editIsRecurring,
                 seriesId = tx.seriesId,
             )
-            if (scope != null && tx.seriesId != null) {
-                repo.updateRecurring(updated, scope)
-            } else {
-                repo.update(updated)
+            when {
+                scope != null && tx.seriesId != null -> repo.updateRecurring(updated, scope)
+                // Newly checked as recurring in edit mode → create future instances
+                tx.seriesId == null && s.editIsRecurring -> repo.registerRecurring(updated)
+                else -> repo.update(updated)
             }
             _uiState.value = _uiState.value.copy(
                 isSaved = true,

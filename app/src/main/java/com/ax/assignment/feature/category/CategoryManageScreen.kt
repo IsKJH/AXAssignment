@@ -48,8 +48,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.graphics.Color
@@ -378,12 +376,9 @@ fun CategoryAddSheet(
         if (hasUnsavedInput) showUnsavedNotice = true else onDismiss()
     }
 
-    val focusRequester = remember { FocusRequester() }
     val offset = remember { Animatable(1f) }
     LaunchedEffect(Unit) {
         offset.animateTo(0f, animationSpec = tween(300, easing = FastOutSlowInEasing))
-        // SCR-06 정책: 시트 진입 시 키보드 자동 활성화
-        focusRequester.requestFocus()
     }
 
     if (showUnsavedNotice) {
@@ -472,7 +467,6 @@ fun CategoryAddSheet(
                         name = name,
                         onNameChange = { input -> if (input.length <= 12) name = input },
                         isError = hasDuplicate,
-                        focusRequester = focusRequester,
                         modifier = Modifier.fillMaxWidth(),
                     )
 
@@ -517,7 +511,6 @@ private fun CategoryNameField(
     onNameChange: (String) -> Unit,
     isError: Boolean,
     modifier: Modifier = Modifier,
-    focusRequester: FocusRequester = remember { FocusRequester() },
 ) {
     var isFocused by remember { mutableStateOf(false) }
 
@@ -551,7 +544,6 @@ private fun CategoryNameField(
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .focusRequester(focusRequester)
                     .onFocusChanged { isFocused = it.isFocused },
             )
         }

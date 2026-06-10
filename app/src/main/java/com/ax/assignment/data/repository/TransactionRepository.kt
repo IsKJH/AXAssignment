@@ -21,4 +21,5 @@ interface TransactionRepository {
     suspend fun updateRecurring(transaction: Transaction, scope: RecurringScope)
     suspend fun deleteRecurring(transaction: Transaction, scope: RecurringScope)
     suspend fun unregisterRecurring(transaction: Transaction)
+    suspend fun registerRecurring(transaction: Transaction)
 }
