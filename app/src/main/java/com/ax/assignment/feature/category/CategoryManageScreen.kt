@@ -213,7 +213,7 @@ fun CategoryManageContent(
             onSave = { name ->
                 val target = editingCategory
                 if (target == null) {
-                    onEvent(CategoryEvent.Add(name, "•", "#90A4AE", TransactionType.EXPENSE))
+                    onEvent(CategoryEvent.Add(name, "•", TransactionType.EXPENSE))
                 } else {
                     onEvent(CategoryEvent.Update(target, name))
                 }

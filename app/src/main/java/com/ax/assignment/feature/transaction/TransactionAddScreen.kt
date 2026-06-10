@@ -666,9 +666,11 @@ internal fun RecurringRow(
             if (showTooltip) {
                 Popup(
                     alignment = Alignment.CenterStart,
+                    // Tail sits at the bubble's vertical center — keep y at 0 so the
+                    // tail points exactly at the help icon's center
                     offset = androidx.compose.ui.unit.IntOffset(
                         x = with(LocalDensity.current) { 24.dp.roundToPx() },
-                        y = with(LocalDensity.current) { 10.dp.roundToPx() },
+                        y = 0,
                     ),
                     onDismissRequest = { showTooltip = false },
                     properties = PopupProperties(focusable = true),

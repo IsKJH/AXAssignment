@@ -17,7 +17,6 @@ sealed class CategoryEvent {
     data class Add(
         val name: String,
         val emoji: String,
-        val colorHex: String,
         val type: TransactionType?,
     ) : CategoryEvent()
 }
