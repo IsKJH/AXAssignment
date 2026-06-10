@@ -2,9 +2,14 @@ package com.ax.assignment.feature.splash
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -17,7 +22,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -45,23 +53,55 @@ fun SplashScreen(navController: NavController) {
             launchSingleTop = true
         }
     }
-    SplashContent()
+    SplashContent(showLoadingDots = true)
 }
 
 // Figma 368:1519 — white bg, brand logo box + app name centered, copyright at bottom
 @Composable
-fun SplashContent() {
+fun SplashContent(showLoadingDots: Boolean = false) {
     // Logo entrance: fade in while scaling up slightly
     val appear = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
         appear.animateTo(1f, tween(600, easing = FastOutSlowInEasing))
     }
 
-    Box(
+    // Loading dots above the logo, lighting up one by one
+    var activeDot by remember { mutableStateOf(0) }
+    LaunchedEffect(showLoadingDots) {
+        while (showLoadingDots) {
+            delay(DOT_STEP_MS)
+            activeDot = (activeDot + 1) % DOT_COUNT
+        }
+    }
+
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White),
     ) {
+        if (showLoadingDots) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = maxHeight * DOT_TOP_FRACTION)
+                    .alpha(appear.value),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                repeat(DOT_COUNT) { index ->
+                    val dotAlpha by animateFloatAsState(
+                        targetValue = if (index == activeDot) 1f else 0.25f,
+                        animationSpec = tween(250),
+                        label = "splashDot$index",
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .alpha(dotAlpha)
+                            .background(NavigationOn, CircleShape),
+                    )
+                }
+            }
+        }
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -108,6 +148,9 @@ fun SplashContent() {
 }
 
 private const val SPLASH_DURATION_MS = 2_000L
+private const val DOT_COUNT = 3
+private const val DOT_STEP_MS = 400L
+private const val DOT_TOP_FRACTION = 0.25f
 
 @Preview(showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
