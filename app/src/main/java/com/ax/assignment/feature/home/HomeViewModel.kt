@@ -15,8 +15,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -28,6 +30,18 @@ class HomeViewModel(
     private val initialPeriodStart = currentPeriodStart(LocalDate.now(), settingsRepo.startDay.value)
     private val _selectedYear = MutableStateFlow(initialPeriodStart.year)
     private val _selectedMonth = MutableStateFlow(initialPeriodStart.monthValue)
+
+    init {
+        // A start-day change redefines every period boundary — snap back to the
+        // current period so a live screen doesn't keep showing a stale month
+        viewModelScope.launch {
+            settingsRepo.startDay.drop(1).collect { day ->
+                val now = currentPeriodStart(LocalDate.now(), day)
+                _selectedYear.value = now.year
+                _selectedMonth.value = now.monthValue
+            }
+        }
+    }
 
     val uiState: StateFlow<HomeUiState> =
         combine(_selectedYear, _selectedMonth, settingsRepo.startDay) { year, month, startDay ->
