@@ -35,8 +35,8 @@ data/    (Room Entity·DAO, Repository 인터페이스+구현, Mapper)
 ---
 
 ## 현재 구현 상태 (2026-06-11, 발표 D-1)
-**전 화면 구현 + 최신 Figma 전수 대조 + 풀 E2E 9/9 PASS + 픽셀 디테일 검수 완료.**
-main 24+커밋. 남은 것: git push(미실행), 시연 데이터 입력, _trash/ 정리.
+**전 화면 구현 + Figma 전수 대조 + E2E PASS + 가로모드 대응 + 가이드 투어 완성.
+GitHub 푸시 완료(origin/main).** 남은 것: 시연 데이터 입력, _trash/ 정리.
 
 ### 패키지 구조 (실제)
 ```
@@ -61,7 +61,8 @@ com.ax.assignment/
 │   ├── transaction/ TransactionAddScreen, TransactionDetailScreen(+편집/정기),
 │   │                TransactionViewModel, TransactionDetailViewModel
 │   ├── category/    CategoryManageScreen(선택/관리/추가·수정시트), CategoryViewModel
-│   ├── settings/    SettingsScreen, StartDaySettingScreen, HelpScreen
+│   ├── settings/    SettingsScreen, StartDaySettingScreen,
+│   │                HelpScreen(코치마크 가이드 투어 — Pager 스와이프+펄스 목업)
 │   └── statistics/  StatisticsScreen, SixMonthHistoryScreen, StatisticsViewModel
 ├── BudgetApplication.kt
 └── MainActivity.kt
