@@ -324,6 +324,9 @@ private fun ReadOnlyContent(
     val amountColor = if (transaction.type == TransactionType.INCOME) HomeIncomeAmount else HomeExpenseAmount
     val dateLabel = if (transaction.type == TransactionType.INCOME) "수입일시" else "지출일시"
     val recurringLabel = if (transaction.type == TransactionType.INCOME) "정기 수입" else "정기 지출"
+    // Income is not categorized — the card shows the fixed "수입" value
+    val categoryName = if (transaction.type == TransactionType.INCOME) "수입"
+        else transaction.category?.name ?: "미분류"
 
     // 446:1302: 정기 거래 → outer gap=8dp, inner group gap=32dp
     // 368:1001: 일반 거래 → outer gap=24dp (no label, just header + cards)
@@ -353,7 +356,7 @@ private fun ReadOnlyContent(
                     amountColor = amountColor,
                 )
                 DetailInfoCards(
-                    categoryName = transaction.category?.name ?: "미분류",
+                    categoryName = categoryName,
                     dateLabel = dateLabel,
                     dateValue = transaction.date.toDisplayString(),
                 )
@@ -375,7 +378,7 @@ private fun ReadOnlyContent(
                 amountColor = amountColor,
             )
             DetailInfoCards(
-                categoryName = transaction.category?.name ?: "미분류",
+                categoryName = categoryName,
                 dateLabel = dateLabel,
                 dateValue = transaction.date.toDisplayString(),
             )
@@ -500,10 +503,13 @@ private fun EditingContent(
                     )
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    CategorySelectorRow(
-                        selectedCategory = uiState.editCategory,
-                        onClick = onCategoryClick,
-                    )
+                    // Income is not categorized — the row only applies to expenses
+                    if (uiState.editType == TransactionType.EXPENSE) {
+                        CategorySelectorRow(
+                            selectedCategory = uiState.editCategory,
+                            onClick = onCategoryClick,
+                        )
+                    }
                     DateSelectorRow(
                         dateTime = uiState.editDate,
                         type = uiState.editType,

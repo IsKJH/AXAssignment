@@ -31,9 +31,11 @@ class TransactionViewModel(
                 _uiState.value = current.copy(
                     categories = cats,
                     // Default-fill only on first load; a null afterwards means the user
-                    // explicitly deselected (미분류) and must stay null
+                    // explicitly deselected (미분류) and must stay null.
+                    // Only expense categories apply — income is not categorized
                     selectedCategory = if (current.categories.isEmpty()) {
-                        current.selectedCategory ?: cats.firstOrNull { it.type == current.type }
+                        current.selectedCategory
+                            ?: cats.firstOrNull { it.type == TransactionType.EXPENSE }
                     } else {
                         current.selectedCategory
                     },
@@ -58,13 +60,10 @@ class TransactionViewModel(
     fun onEvent(event: TransactionEvent) = when (event) {
         is TransactionEvent.SetAmount -> _uiState.value =
             _uiState.value.copy(amount = event.value.filter { it.isDigit() })
-        is TransactionEvent.SetType -> {
-            val cats = _uiState.value.categories
-            _uiState.value = _uiState.value.copy(
-                type = event.type,
-                selectedCategory = cats.firstOrNull { it.type == event.type },
-            )
-        }
+        // Keep the entered category across tab switches (spec 16:172); income
+        // hides the row and drops the category at save time
+        is TransactionEvent.SetType -> _uiState.value =
+            _uiState.value.copy(type = event.type)
         is TransactionEvent.SetCategory -> _uiState.value =
             _uiState.value.copy(selectedCategory = event.category)
         is TransactionEvent.SetMemo -> _uiState.value =
@@ -93,7 +92,7 @@ class TransactionViewModel(
                 id = 0L,
                 amount = amount,
                 type = s.type,
-                category = s.selectedCategory,
+                category = if (s.type == TransactionType.INCOME) null else s.selectedCategory,
                 memo = s.memo,
                 date = s.date,
                 isRecurring = s.isRecurring,

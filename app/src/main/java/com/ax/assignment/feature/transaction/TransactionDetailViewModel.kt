@@ -10,6 +10,7 @@ import com.ax.assignment.data.repository.CategoryRepository
 import com.ax.assignment.data.repository.TransactionRepository
 import com.ax.assignment.domain.model.RecurringScope
 import com.ax.assignment.domain.model.Transaction
+import com.ax.assignment.domain.model.TransactionType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -77,8 +78,10 @@ class TransactionDetailViewModel(
         TransactionDetailEvent.UnregisterRecurring -> unregisterRecurring()
         is TransactionDetailEvent.SetAmount ->
             _uiState.value = _uiState.value.copy(editAmount = event.value.filter { it.isDigit() })
+        // Keep the entered category across tab switches (spec 16:172); income
+        // hides the row and drops the category at save time
         is TransactionDetailEvent.SetType ->
-            _uiState.value = _uiState.value.copy(editType = event.type, editCategory = null)
+            _uiState.value = _uiState.value.copy(editType = event.type)
         is TransactionDetailEvent.SetMemo ->
             _uiState.value = _uiState.value.copy(editMemo = event.memo)
         is TransactionDetailEvent.SetCategory ->
@@ -99,7 +102,7 @@ class TransactionDetailViewModel(
                 id = tx.id,
                 amount = amount,
                 type = s.editType,
-                category = s.editCategory,
+                category = if (s.editType == TransactionType.INCOME) null else s.editCategory,
                 memo = s.editMemo,
                 date = s.editDate,
                 isRecurring = false,
@@ -135,7 +138,7 @@ class TransactionDetailViewModel(
                 id = tx.id,
                 amount = amount,
                 type = s.editType,
-                category = s.editCategory,
+                category = if (s.editType == TransactionType.INCOME) null else s.editCategory,
                 memo = s.editMemo,
                 date = s.editDate,
                 isRecurring = s.editIsRecurring,

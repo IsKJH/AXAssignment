@@ -219,10 +219,13 @@ fun TransactionAddContent(
                         onMemoChange = { onEvent(TransactionEvent.SetMemo(it)) },
                     )
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        CategorySelectorRow(
-                            selectedCategory = uiState.selectedCategory,
-                            onClick = onNavigateToCategorySelect,
-                        )
+                        // Income is not categorized — the row only applies to expenses
+                        if (uiState.type == TransactionType.EXPENSE) {
+                            CategorySelectorRow(
+                                selectedCategory = uiState.selectedCategory,
+                                onClick = onNavigateToCategorySelect,
+                            )
+                        }
                         DateSelectorRow(
                             dateTime = uiState.date,
                             type = uiState.type,

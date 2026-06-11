@@ -48,11 +48,15 @@ fun TransactionItem(
     val isIncome = transaction.type == TransactionType.INCOME
     val amountColor = if (isIncome) HomeIncomeAmount else HomeExpenseAmount
     val amountPrefix = if (isIncome) "+" else "-"
-    val categoryLabel = transaction.category?.name ?: if (isIncome) "수입" else "미분류"
-    // Uncategorized falls back to gray, matching the statistics screen
-    val dotColor = transaction.category?.let {
-        runCatching { Color(android.graphics.Color.parseColor(it.colorHex)) }.getOrElse { NavigationOff }
-    } ?: TextDescription
+    // Income rows are not categorized — fixed "수입" title + green dot (368:885)
+    val categoryLabel = if (isIncome) "수입" else transaction.category?.name ?: "미분류"
+    // Uncategorized expense falls back to gray, matching the statistics screen
+    val dotColor = when {
+        isIncome -> HomeIncomeAmount
+        else -> transaction.category?.let {
+            runCatching { Color(android.graphics.Color.parseColor(it.colorHex)) }.getOrElse { NavigationOff }
+        } ?: TextDescription
+    }
 
     Column(modifier = modifier.fillMaxWidth()) {
         Row(

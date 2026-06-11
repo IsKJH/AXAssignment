@@ -52,9 +52,6 @@ abstract class AppDatabase : RoomDatabase() {
                 CategoryEntity(name = "여가", emoji = "🎬", colorHex = "#4DD0E1", type = "EXPENSE", isDefault = true, sortOrder = 4),
                 CategoryEntity(name = "주거", emoji = "🏠", colorHex = "#81C784", type = "EXPENSE", isDefault = true, sortOrder = 5),
                 CategoryEntity(name = "교육", emoji = "📚", colorHex = "#90A4AE", type = "EXPENSE", isDefault = true, sortOrder = 6),
-                CategoryEntity(name = "급여", emoji = "💰", colorHex = "#60D551", type = "INCOME", isDefault = true, sortOrder = 0),
-                CategoryEntity(name = "용돈", emoji = "🎁", colorHex = "#FFD54F", type = "INCOME", isDefault = true, sortOrder = 1),
-                CategoryEntity(name = "기타수입", emoji = "✨", colorHex = "#4DD0E1", type = "INCOME", isDefault = true, sortOrder = 2),
             )
             dao.insertAll(defaults)
         }
