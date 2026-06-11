@@ -180,3 +180,38 @@ class UI:
     def screenshot(self, path):
         self.adb("shell", "screencap", "-p", "/sdcard/ui_shot.png")
         self.adb("pull", "/sdcard/ui_shot.png", path)
+
+
+# ---- CLI -------------------------------------------------------------------
+# Token-cheap screen inspection for agent use (text out, no images):
+#   python -X utf8 scripts/ui.py texts            # all visible texts + centers
+#   python -X utf8 scripts/ui.py find <문자열>     # nodes containing it (exit 1 if none)
+#   python -X utf8 scripts/ui.py tap <문자열>      # tap first node containing it
+if __name__ == "__main__":
+    import sys
+
+    u = UI()
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "texts"
+    root = u.dump()
+    if root is None:
+        sys.exit("dump failed (screen off/locked?)")
+
+    def rows(pred):
+        for node in root.iter("node"):
+            label = node.get("text") or node.get("content-desc")
+            if label and pred(label):
+                c = UI._center(node)
+                yield f"{label}\t({c[0]},{c[1]})" if c else label
+
+    if cmd == "texts":
+        print("\n".join(rows(lambda s: True)))
+    elif cmd == "find":
+        needle = sys.argv[2]
+        out = list(rows(lambda s: needle in s))
+        print("\n".join(out) if out else f"NOT FOUND: {needle}")
+        sys.exit(0 if out else 1)
+    elif cmd == "tap":
+        u.tap(text=sys.argv[2], contains=True)
+        print("tapped")
+    else:
+        sys.exit(f"unknown command: {cmd}")

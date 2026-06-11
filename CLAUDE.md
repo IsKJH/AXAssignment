@@ -146,6 +146,9 @@ adb shell am start -n com.ax.assignment/.MainActivity
 
 ### 기기 좌표 & mobile-mcp 규칙 (1080×2640)
 BottomNav 홈(156,2358)/통계(504,2358)/설정(852,2358), FAB(948,2181)
+- **토큰 절약 1순위**: 텍스트 확인은 `python -X utf8 scripts/ui.py find "문자열"`(~30토큰),
+  화면 텍스트 전체는 `ui.py texts`(~200토큰). MCP 요소 리스트(~2.5k)·inline 스크린샷(~2k)은
+  구조 파악/시각 검증이 정말 필요할 때만. 스크린샷은 save_screenshot→crop→축소→Read
 - 탭/스와이프 좌표 = 항상 실픽셀. 스크린샷(축소본) 좌표는 ×(1080/이미지폭) 환산
 - 클릭은 `mobile_list_elements_on_screen` bounds 1순위 — 스크린샷 추정은 최후 수단
 - 스와이프 direction = 손가락 방향(down=이전 콘텐츠). x/y/distance로 영역 한정 가능

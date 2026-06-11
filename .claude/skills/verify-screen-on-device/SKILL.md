@@ -100,7 +100,13 @@ mcp__mobile-mcp__mobile_list_crashes(device="R3CT50PWVHA")
   `adb shell screencap -p -d 4630947232161729154 //sdcard/x.png` (메인 디스플레이,
   ID 목록: `dumpsys SurfaceFlinger --display-id`). git-bash에선 `/sdcard`가 경로 변환되므로
   `//sdcard`로 쓸 것.
-- **호출 최소화**: 화면당 스크린샷 1회 원칙. 상태 확인은 요소 리스트가 더 빠르고 토큰도 적음.
+- **호출 최소화 (토큰 절약 — 우선순위 순)**:
+  ① 텍스트 존재/좌표 확인 = `python -X utf8 scripts/ui.py find "문자열"` (~30토큰),
+  화면 전체 텍스트 = `scripts/ui.py texts` (~200토큰).
+  ② 구조 파악이 필요할 때만 `mobile_list_elements_on_screen` (~2.5k토큰).
+  ③ 시각 검증이 필요할 때만 스크린샷 — **inline `take_screenshot`(~2k토큰) 대신
+  `save_screenshot` 후 PIL로 관심 영역 crop + 420px 이하 축소 후 Read** (~0.5k토큰).
+  화면당 스크린샷 1회 원칙.
 - **거래 입력은 스크립트 사용**: `python -X utf8 scripts/device_input.py add <금액> <메모> [카테고리]`
   (수입은 `--income`, 대량은 `bulk <json>`) — 순수 adb로 전체 플로우를 1회 호출에 처리.
   MCP 단계별 입력(~107초/건) 대비 **~13초/건**. 홈 화면에서 시작해야 함.
