@@ -93,6 +93,13 @@ mcp__mobile-mcp__mobile_list_crashes(device="R3CT50PWVHA")
   입력 가능. 미설치 기기는 ASCII만 됨.
 - **스크린샷 400 에러** (알려진 issue #140, 세로 2640px 조건): 발생 시 세션 재시작 대신
   `mobile_save_screenshot`으로 파일 저장 후 Read로 읽어 우회.
+- **스크린샷 "Not a valid PNG" 에러**: 기기 화면이 잠겼거나 꺼진 상태 — 도구 문제가 아님.
+  `dumpsys power | grep mWakefulness`로 확인하고, PIN 잠금이면 사용자에게 해제 요청.
+- **adb screencap은 디스플레이 지정 필수** (Z Flip3 = 폴더블, 커버스크린 포함 2개):
+  지정 없으면 커버스크린(검은 화면)이 잡힐 수 있다.
+  `adb shell screencap -p -d 4630947232161729154 //sdcard/x.png` (메인 디스플레이,
+  ID 목록: `dumpsys SurfaceFlinger --display-id`). git-bash에선 `/sdcard`가 경로 변환되므로
+  `//sdcard`로 쓸 것.
 - **호출 최소화**: 화면당 스크린샷 1회 원칙. 상태 확인은 요소 리스트가 더 빠르고 토큰도 적음.
 - **거래 입력은 스크립트 사용**: `python -X utf8 scripts/device_input.py add <금액> <메모> [카테고리]`
   (수입은 `--income`, 대량은 `bulk <json>`) — 순수 adb로 전체 플로우를 1회 호출에 처리.
