@@ -1,7 +1,5 @@
 package com.ax.assignment.feature.statistics
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,12 +28,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.Alignment
@@ -58,6 +54,8 @@ import com.ax.assignment.BudgetApplication
 import com.ax.assignment.R
 import com.ax.assignment.core.component.AppTopBar
 import com.ax.assignment.core.component.DonutChart
+import com.ax.assignment.core.component.StaggeredAppear
+import com.ax.assignment.core.component.rememberEntranceTime
 import com.ax.assignment.core.navigation.Screen
 import com.ax.assignment.core.theme.AXAssignmentTheme
 import com.ax.assignment.core.theme.CategoryColors
@@ -70,7 +68,6 @@ import com.ax.assignment.core.theme.TextDescription
 import com.ax.assignment.core.util.periodSwipe
 import com.ax.assignment.core.util.toCurrencyString
 import com.ax.assignment.domain.model.CategorySummary
-import kotlinx.coroutines.delay
 import java.time.LocalDate
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -341,28 +338,15 @@ private fun CategorySection(
 
         if (uiState.isEmptyExpense) {
             Spacer(Modifier.height(80.dp))
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_figma_bar_chart),
-                    contentDescription = null,
-                    modifier = Modifier.size(88.dp),
-                    tint = Color(0xFFD2D2D2),
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = "아직 사용한 이력이 없어요.",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextDefault,
-                )
+            // Same fade/float entrance as list rows — empty state greets like content does
+            StaggeredAppear(index = 0, entranceTime = rememberEntranceTime()) {
+                EmptyExpenseBody()
             }
         } else {
+            val entranceTime = rememberEntranceTime()
             val comparisons = uiState.categoryComparisons
             comparisons.forEachIndexed { index, comparison ->
-                StaggeredAppear(index = index) {
+                StaggeredAppear(index = index, entranceTime = entranceTime) {
                     CategoryRow(
                         comparison = comparison,
                         showDivider = index < comparisons.size - 1,
@@ -373,20 +357,26 @@ private fun CategorySection(
     }
 }
 
-// Rows fade in and float up one after another (stagger)
 @Composable
-private fun StaggeredAppear(index: Int, content: @Composable () -> Unit) {
-    val appear = remember { Animatable(0f) }
-    LaunchedEffect(Unit) {
-        delay(index * 50L)
-        appear.animateTo(1f, tween(300))
+private fun EmptyExpenseBody() {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Icon(
+            painter = painterResource(id = R.drawable.ic_figma_bar_chart),
+            contentDescription = null,
+            modifier = Modifier.size(88.dp),
+            tint = Color(0xFFD2D2D2),
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = "아직 사용한 이력이 없어요.",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = TextDefault,
+        )
     }
-    Box(
-        modifier = Modifier.graphicsLayer {
-            alpha = appear.value
-            translationY = (1f - appear.value) * 20.dp.toPx()
-        },
-    ) { content() }
 }
 
 @Composable

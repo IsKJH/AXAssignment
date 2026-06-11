@@ -66,6 +66,8 @@ import androidx.navigation.NavController
 import com.ax.assignment.BudgetApplication
 import com.ax.assignment.core.component.AppTopBar
 import com.ax.assignment.core.component.DeleteConfirmDialog
+import com.ax.assignment.core.component.StaggeredAppear
+import com.ax.assignment.core.component.rememberEntranceTime
 import com.ax.assignment.core.theme.AXAssignmentTheme
 import com.ax.assignment.core.theme.Pretendard
 import com.ax.assignment.core.theme.BrandLight
@@ -163,64 +165,78 @@ fun CategoryManageContent(
                 .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            CategorySectionTitle("기본")
+            // Same staggered entrance as the home/statistics lists
+            val entranceTime = rememberEntranceTime()
+            var staggerIndex = 0
+
+            StaggeredAppear(index = staggerIndex++, entranceTime = entranceTime) {
+                CategorySectionTitle("기본")
+            }
             defaultCategories.forEach { category ->
-                CategoryListItem(
-                    category = category,
-                    isSelected = category.id == selectedCategoryId,
-                    onClick = {
-                        if (onCategorySelected != null) {
-                            if (selectedCategoryId == category.id) {
-                                // Spec 17:178 — re-tap deselects; back then returns unselected
-                                selectedCategoryId = 0L
-                                onCategoryDeselected?.invoke()
+                StaggeredAppear(index = staggerIndex++, entranceTime = entranceTime) {
+                    CategoryListItem(
+                        category = category,
+                        isSelected = category.id == selectedCategoryId,
+                        onClick = {
+                            if (onCategorySelected != null) {
+                                if (selectedCategoryId == category.id) {
+                                    // Spec 17:178 — re-tap deselects; back then returns unselected
+                                    selectedCategoryId = 0L
+                                    onCategoryDeselected?.invoke()
+                                } else {
+                                    onCategorySelected(category)
+                                }
                             } else {
-                                onCategorySelected(category)
+                                selectedCategoryId = if (selectedCategoryId == category.id) 0L else category.id
                             }
-                        } else {
-                            selectedCategoryId = if (selectedCategoryId == category.id) 0L else category.id
-                        }
-                    },
-                )
+                        },
+                    )
+                }
             }
 
             Spacer(Modifier.height(24.dp))
-            CategorySectionTitle("내 카테고리")
+            StaggeredAppear(index = staggerIndex++, entranceTime = entranceTime) {
+                CategorySectionTitle("내 카테고리")
+            }
             customCategories.forEach { category ->
-                CategoryListItem(
-                    category = category,
-                    isSelected = category.id == selectedCategoryId,
-                    onClick = {
-                        if (onCategorySelected != null) {
-                            if (selectedCategoryId == category.id) {
-                                // Spec 17:178 — re-tap deselects; back then returns unselected
-                                selectedCategoryId = 0L
-                                onCategoryDeselected?.invoke()
+                StaggeredAppear(index = staggerIndex++, entranceTime = entranceTime) {
+                    CategoryListItem(
+                        category = category,
+                        isSelected = category.id == selectedCategoryId,
+                        onClick = {
+                            if (onCategorySelected != null) {
+                                if (selectedCategoryId == category.id) {
+                                    // Spec 17:178 — re-tap deselects; back then returns unselected
+                                    selectedCategoryId = 0L
+                                    onCategoryDeselected?.invoke()
+                                } else {
+                                    onCategorySelected(category)
+                                }
                             } else {
-                                onCategorySelected(category)
+                                selectedCategoryId = if (selectedCategoryId == category.id) 0L else category.id
                             }
+                        },
+                        onEdit = {
+                            editingCategory = category
+                            showEditor = true
+                        },
+                        onDelete = { deleteTarget = category },
+                    )
+                }
+            }
+            StaggeredAppear(index = staggerIndex, entranceTime = entranceTime) {
+                AddCategoryRow(
+                    enabled = canAddCustom,
+                    onClick = {
+                        if (canAddCustom) {
+                            editingCategory = null
+                            showEditor = true
                         } else {
-                            selectedCategoryId = if (selectedCategoryId == category.id) 0L else category.id
+                            Toast.makeText(context, "최대 7개까지 추가 가능합니다", Toast.LENGTH_SHORT).show()
                         }
                     },
-                    onEdit = {
-                        editingCategory = category
-                        showEditor = true
-                    },
-                    onDelete = { deleteTarget = category },
                 )
             }
-            AddCategoryRow(
-                enabled = canAddCustom,
-                onClick = {
-                    if (canAddCustom) {
-                        editingCategory = null
-                        showEditor = true
-                    } else {
-                        Toast.makeText(context, "최대 7개까지 추가 가능합니다", Toast.LENGTH_SHORT).show()
-                    }
-                },
-            )
         }
     }
 

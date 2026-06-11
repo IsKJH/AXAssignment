@@ -37,8 +37,15 @@ fun EmptyStateView(
     title: String = "아직 입력한 내역이 없어요!",
     subtitle: String = "+버튼으로 지출 관리를 시작하세요.",
 ) {
+    // Same fade/float entrance as list rows — empty states greet like content does
+    StaggeredAppear(index = 0, entranceTime = rememberEntranceTime(), modifier = modifier) {
+        EmptyStateBody(title = title, subtitle = subtitle)
+    }
+}
+
+@Composable
+private fun EmptyStateBody(title: String, subtitle: String) {
     Column(
-        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Icon(
