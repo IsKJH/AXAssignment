@@ -101,8 +101,12 @@ com.ax.assignment/
 - [사용자 선호] 카테고리 시트 키보드 자동 포커스 없음 (직접 탭 시에만)
 
 ### 인셋 규칙 (중요 — 회귀 주의)
-- NavGraph Scaffold는 contentWindowInsets(0) — 인셋은 화면이 직접 처리
+- NavGraph Scaffold는 contentWindowInsets(0) — 상/하단 인셋은 화면이 직접 처리
 - 상단: AppTopBar/자체 톱바의 statusBarsPadding. 하단 고정 버튼: navigationBarsPadding 필수
+- **좌우 인셋(가로모드)**: NavGraph Scaffold가 safeDrawing Horizontal을 전역 처리
+  (세로에선 0). 화면에서 좌우 인셋 중복 처리 금지
+- **가로모드**: configChanges로 회전 시 Activity 재생성 없음 — remember 상태 유지.
+  세로 고정 레이아웃 화면은 verticalScroll 필수 (설정/6개월 내역에 적용됨)
 - 전역 레이아웃 변경 시 상단 톱바 + 하단 버튼 + 바텀시트 3종 모두 검증할 것
 
 ---

@@ -2,6 +2,8 @@ package com.ax.assignment.feature.statistics
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Arrangement
@@ -105,6 +107,7 @@ fun SixMonthHistoryContent(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
+                        .verticalScroll(rememberScrollState())
                         .padding(horizontal = 16.dp),
                 ) {
                     Spacer(Modifier.height(16.dp))
