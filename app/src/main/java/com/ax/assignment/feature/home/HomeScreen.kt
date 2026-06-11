@@ -1,8 +1,10 @@
 package com.ax.assignment.feature.home
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -18,7 +20,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -26,8 +27,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -63,6 +66,7 @@ import com.ax.assignment.domain.model.Transaction
 import com.ax.assignment.domain.model.TransactionType
 import java.time.LocalDate
 import java.time.LocalDateTime
+import kotlinx.coroutines.delay
 
 @Composable
 fun HomeScreen(navController: NavController) {
@@ -262,6 +266,14 @@ private fun HomeListContent(
             .sortedByDescending { it.key }
     }
 
+    // Stagger only on first entrance — rows composed later (scroll, period swipe)
+    // must appear instantly or the list feels laggy
+    var entranceDone by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(1200L)
+        entranceDone = true
+    }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -290,20 +302,52 @@ private fun HomeListContent(
             )
         }
 
-        // 날짜별 섹션 헤더 + 거래 항목 — animateItem으로 삭제 시 빈자리 메꿈/등장 페이드
+        // 날짜별 섹션 헤더 + 거래 항목 — animateItem으로 삭제 시 빈자리 메꿈/등장 페이드,
+        // 첫 진입 시엔 통계 화면과 같은 스태거 등장
+        var staggerIndex = 0
         grouped.forEach { (date, txList) ->
+            val headerIndex = staggerIndex++
             item(key = "header-$date") {
-                DateSectionHeader(date = date, modifier = Modifier.animateItem())
+                StaggeredAppear(index = headerIndex, enabled = !entranceDone, modifier = Modifier.animateItem()) {
+                    DateSectionHeader(date = date)
+                }
             }
-            items(txList, key = { it.id }) { tx ->
-                TransactionItem(
-                    transaction = tx,
-                    onClick = { onNavigateToDetail(tx.id) },
-                    modifier = Modifier.animateItem(),
-                )
+            txList.forEach { tx ->
+                val rowIndex = staggerIndex++
+                item(key = tx.id) {
+                    StaggeredAppear(index = rowIndex, enabled = !entranceDone, modifier = Modifier.animateItem()) {
+                        TransactionItem(
+                            transaction = tx,
+                            onClick = { onNavigateToDetail(tx.id) },
+                        )
+                    }
+                }
             }
         }
     }
+}
+
+// Rows fade in and float up one after another — same entrance as the statistics list
+@Composable
+private fun StaggeredAppear(
+    index: Int,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    val appear = remember { Animatable(if (enabled) 0f else 1f) }
+    LaunchedEffect(Unit) {
+        if (appear.value < 1f) {
+            delay((index * 50L).coerceAtMost(800L))
+            appear.animateTo(1f, tween(300))
+        }
+    }
+    Box(
+        modifier = modifier.graphicsLayer {
+            alpha = appear.value
+            translationY = (1f - appear.value) * 20.dp.toPx()
+        },
+    ) { content() }
 }
 
 @Composable
