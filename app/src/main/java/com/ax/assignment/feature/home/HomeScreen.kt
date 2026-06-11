@@ -11,6 +11,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -53,6 +54,7 @@ import com.ax.assignment.core.component.SummaryCard
 import com.ax.assignment.core.component.TransactionItem
 import com.ax.assignment.core.component.rememberEntranceTime
 import com.ax.assignment.core.navigation.Screen
+import com.ax.assignment.core.util.periodRangeLabel
 import com.ax.assignment.core.theme.AXAssignmentTheme
 import com.ax.assignment.core.theme.FabFill
 import com.ax.assignment.core.theme.OnSurface
@@ -315,6 +317,11 @@ private fun HomeListContent(
                 }
             }
         }
+
+        // Scrolled to the end, the last amount must clear the floating FAB
+        item(key = "fab-clearance") {
+            Spacer(Modifier.height(80.dp))
+        }
     }
 }
 
@@ -330,12 +337,9 @@ private fun DateSectionHeader(date: LocalDate, modifier: Modifier = Modifier) {
     )
 }
 
-/** Latest Figma target: "6월1일 ~ 6월30일" */
-private fun buildPeriodLabel(start: LocalDate, end: LocalDate): String {
-    val startStr = "${start.monthValue}월${start.dayOfMonth}일"
-    val endStr = "${end.monthValue}월${end.dayOfMonth}일"
-    return "$startStr ~ $endStr"
-}
+/** Latest Figma target: "6월1일 ~ 6월30일" — other years carry a year prefix */
+private fun buildPeriodLabel(start: LocalDate, end: LocalDate): String =
+    periodRangeLabel(start, end)
 
 // ---- Previews ----
 

@@ -65,6 +65,7 @@ import com.ax.assignment.core.theme.NavigationOn
 import com.ax.assignment.core.theme.Surface
 import com.ax.assignment.core.theme.TextDefault
 import com.ax.assignment.core.theme.TextDescription
+import com.ax.assignment.core.util.periodRangeLabel
 import com.ax.assignment.core.util.periodSwipe
 import com.ax.assignment.core.util.toCurrencyString
 import com.ax.assignment.domain.model.CategorySummary
@@ -144,7 +145,7 @@ private fun PeriodSelectorRow(
     onPrev: () -> Unit,
     onNext: () -> Unit,
 ) {
-    val rangeText = "${start.monthValue}월${start.dayOfMonth}일 ~ ${end.monthValue}월${end.dayOfMonth}일"
+    val rangeText = periodRangeLabel(start, end)
     Row(
         modifier = Modifier
             .fillMaxWidth()
