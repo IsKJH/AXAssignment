@@ -34,8 +34,9 @@ data/    (Room Entity·DAO, Repository 인터페이스+구현, Mapper)
 
 ---
 
-## 현재 구현 상태 (2026-06-10)
-**전 화면 구현 + 최신 Figma 전수 대조 완료.** 발표 준비 끝. 커밋만 남음.
+## 현재 구현 상태 (2026-06-11, 발표 D-1)
+**전 화면 구현 + 최신 Figma 전수 대조 + 풀 E2E 9/9 PASS + 픽셀 디테일 검수 완료.**
+main 24+커밋. 남은 것: git push(미실행), 시연 데이터 입력, _trash/ 정리.
 
 ### 패키지 구조 (실제)
 ```
@@ -43,11 +44,12 @@ com.ax.assignment/
 ├── core/
 │   ├── navigation/  Screen.kt, NavGraph.kt
 │   ├── theme/       Color.kt, Theme.kt, Type.kt(Pretendard 번들)
-│   ├── component/   AppTopBar, BottomNavBar, DonutChart, TransactionItem,
-│   │                SummaryCard, CategoryChip, MonthSelector, EmptyStateView,
+│   ├── component/   AppTopBar(56dp), BottomNavBar, DonutChart(스윕+프레스스크럽),
+│   │                TransactionItem, SummaryCard, MonthSelector, EmptyStateView,
 │   │                DeleteConfirmDialog(햅틱)
 │   └── util/        CurrencyFormatter, DateFormatter, PeriodCalculator, PeriodSwipe
-├── domain/model/    Transaction(+seriesId), Category, CategorySummary, TransactionType
+├── domain/model/    Transaction(+seriesId), Category, CategorySummary, TransactionType,
+│                    MonthlyExpense, RecurringScope
 ├── data/
 │   ├── local/       AppDatabase(v5), Converters(LocalDateTime↔Long), dao/, entity/
 │   ├── mapper/      TransactionMapper, CategoryMapper
@@ -70,17 +72,26 @@ com.ax.assignment/
 - `Transaction.date: LocalDateTime` (TypeConverter epochMilli)
 - **정기 거래(seriesId)**: 등록 시 앵커+11개월 인스턴스 생성(`RECURRING_MONTHS=12`).
   범위 수정/삭제(이달만/이후/전체) = DAO updateSeriesFrom/All, deleteSeriesFrom/All.
-  정기 해제(502:1277) = 이후 인스턴스 삭제 + 자신은 일반 거래화
+  해제(502:1277) = 이후 삭제+일반화 / 편집에서 신규 체크 = registerRecurring(12개월 생성) — 양방향
+- **% 표시**: 소수점 반올림, 최소 1% 보정 없음 (Figma 코멘트 정책)
+- 커스텀 카테고리 색: CategoryViewModel.CUSTOM_CATEGORY_COLORS 8색에서 미사용 색 자동 배정
 - **주기**: SettingsRepository.startDay(1~28) 기반 `periodRange()`. 통계 trend는
   실제 현재 주기 anchoring (선택 주기와 무관 — 6개월 내역 버튼/페이지 일관성)
 - 카테고리: 기본 7개 보호, 사용자 최대 7개, 삭제 시 거래 FK SET_NULL(미분류)
 
 ### UX 폴리시 (구현됨)
 - 애니메이션: 도넛 스윕(800ms), 카운트업·프로그레스(700ms), 바 성장(700ms),
-  통계 리스트 스태거(50ms/행), 말풍선 팝, 스플래시 등장, 프로그레스 색 전환
+  통계 리스트 스태거(50ms/행), 말풍선 팝, 스플래시 등장+로딩점 3개, 프로그레스 색 전환
+- **도넛 프레스&스크럽**: 누르면 중앙에 카테고리명+%, 문지르면 실시간 전환, 떼면 복귀 (햅틱)
 - 좌우 스와이프 주기 이동: 홈 + 통계 (`Modifier.periodSwipe`)
-- 토스트: 저장/수정/삭제. 햅틱: 삭제류 확정, 바 탭
-- 앱 아이콘: adaptive(#559AFF+로고) + 레거시 webp 5밀도
+- 토스트: 저장/수정/삭제. 햅틱: 삭제류 확정, 바 탭, 도넛 스크럽
+- 앱 아이콘: adaptive(#559AFF+로고) + 레거시 webp 5밀도. 앱명 "AX 가계부"
+- [사용자 선호] 카테고리 시트 키보드 자동 포커스 없음 (직접 탭 시에만)
+
+### 인셋 규칙 (중요 — 회귀 주의)
+- NavGraph Scaffold는 contentWindowInsets(0) — 인셋은 화면이 직접 처리
+- 상단: AppTopBar/자체 톱바의 statusBarsPadding. 하단 고정 버튼: navigationBarsPadding 필수
+- 전역 레이아웃 변경 시 상단 톱바 + 하단 버튼 + 바텀시트 3종 모두 검증할 것
 
 ---
 
