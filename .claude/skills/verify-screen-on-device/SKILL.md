@@ -110,3 +110,10 @@ mcp__mobile-mcp__mobile_list_crashes(device="R3CT50PWVHA")
   ② 화면 전환 후엔 반드시 `u.gate(목적지 고유 마커)` — 전환 애니메이션 중 이전 화면 요소를
   매칭하는 경합 방지, ③ 한글은 devicekit 클립보드 브로드캐스트(`u.type`이 자동 분기),
   ④ 카테고리 선택처럼 "재탭=해제" UI는 현재 선택 확인 후 분기 (device_input.select_category 참고).
+- **애니메이션 중간 프레임 검증** (잘림·깜빡임 등 과도 상태 버그): ffmpeg 녹화 대신
+  `adb shell settings put global animator_duration_scale 10`으로 10배 감속(Compose Animatable도
+  적용됨) 후 `input tap … && for i in 1..6; do screencap …; done` 버스트 캡처가 가장 빠르다.
+  검증 끝나면 **반드시 scale 1 복구**. 실례: graphicsLayer alpha<1 동안 오프스크린 합성이
+  레이어 크기로 잘라 말풍선 양옆이 잘리던 버그 — 중간 프레임으로 전/후 입증.
+- **git-bash에서 adb 기기 경로는 `MSYS_NO_PATHCONV=1`** 선행: `/data/local/tmp/...` 류가
+  `C:/Program Files/Git/...`로 변환돼 push/shell 인자가 깨진다 (`//`보다 안전한 일괄 해법).
