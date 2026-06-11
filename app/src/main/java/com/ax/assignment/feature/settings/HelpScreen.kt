@@ -1,17 +1,11 @@
 package com.ax.assignment.feature.settings
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -28,6 +22,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,10 +35,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -208,8 +205,9 @@ private fun HelpRow(
 
 @Composable
 private fun GuideTourDialog(item: HelpItem, onDismiss: () -> Unit) {
-    var stepIndex by remember(item) { mutableIntStateOf(0) }
-    val isLast = stepIndex == item.steps.lastIndex
+    val pagerState = rememberPagerState(pageCount = { item.steps.size })
+    val scope = rememberCoroutineScope()
+    val isLast = pagerState.currentPage == item.steps.lastIndex
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -244,14 +242,7 @@ private fun GuideTourDialog(item: HelpItem, onDismiss: () -> Unit) {
                 )
                 Spacer(Modifier.height(16.dp))
 
-                AnimatedContent(
-                    targetState = stepIndex,
-                    transitionSpec = {
-                        (slideInHorizontally { it / 3 } + fadeIn(tween(200)))
-                            .togetherWith(slideOutHorizontally { -it / 3 } + fadeOut(tween(150)))
-                    },
-                    label = "guideStep",
-                ) { index ->
+                HorizontalPager(state = pagerState) { index ->
                     val step = item.steps[index]
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         // Visual stage — mini mockup of the real UI element
@@ -281,9 +272,9 @@ private fun GuideTourDialog(item: HelpItem, onDismiss: () -> Unit) {
                     item.steps.indices.forEach { i ->
                         Box(
                             modifier = Modifier
-                                .size(if (i == stepIndex) 8.dp else 6.dp)
+                                .size(if (i == pagerState.currentPage) 8.dp else 6.dp)
                                 .background(
-                                    if (i == stepIndex) CardPrimary else Color(0xFFE0E0E0),
+                                    if (i == pagerState.currentPage) CardPrimary else Color(0xFFE0E0E0),
                                     CircleShape,
                                 ),
                         )
@@ -292,7 +283,15 @@ private fun GuideTourDialog(item: HelpItem, onDismiss: () -> Unit) {
                 Spacer(Modifier.height(16.dp))
 
                 Button(
-                    onClick = { if (isLast) onDismiss() else stepIndex++ },
+                    onClick = {
+                        if (isLast) {
+                            onDismiss()
+                        } else {
+                            scope.launch {
+                                pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                            }
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth().height(44.dp),
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(
