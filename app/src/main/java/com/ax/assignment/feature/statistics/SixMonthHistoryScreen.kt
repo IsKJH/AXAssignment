@@ -1,10 +1,9 @@
 package com.ax.assignment.feature.statistics
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -183,10 +183,21 @@ private fun BarChartSection(
         growth.animateTo(1f, tween(700, easing = FastOutSlowInEasing))
     }
 
+    // One tap handler over the whole chart (bars, gaps and month labels) so
+    // near-miss taps between bars still select the closest month. Slot
+    // boundaries from uniform division always fall inside the 16dp gaps.
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 16.dp)
+            .pointerInput(trend.size) {
+                detectTapGestures { offset ->
+                    val slotWidth = size.width / trend.size.toFloat()
+                    val index = (offset.x / slotWidth).toInt().coerceIn(0, trend.size - 1)
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onBarSelected(index)
+                }
+            },
     ) {
         Row(
             modifier = Modifier
@@ -202,23 +213,14 @@ private fun BarChartSection(
                 // Bar color is fixed to the current period; tapping only moves the tooltip
                 val isCurrentPeriod = index == currentIndex
                 val barColor = if (isCurrentPeriod) NavigationOn else Color(0xFFEEEEEE)
-                val interactionSource = remember { MutableInteractionSource() }
 
-                // Full-height column as tap target so zero-amount stub bars stay tappable.
                 // Selected column is lifted above siblings so the overflowing tooltip
                 // is not covered by bars drawn later in the Row.
                 Column(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
-                        .zIndex(if (index == selectedIndex) 1f else 0f)
-                        .clickable(
-                            interactionSource = interactionSource,
-                            indication = null,
-                        ) {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            onBarSelected(index)
-                        },
+                        .zIndex(if (index == selectedIndex) 1f else 0f),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Bottom,
                 ) {
@@ -228,13 +230,18 @@ private fun BarChartSection(
                         LaunchedEffect(selectedIndex) {
                             pop.animateTo(1f, tween(220, easing = FastOutSlowInEasing))
                         }
+                        // unbounded wrap must sit OUTSIDE graphicsLayer: with alpha < 1 the
+                        // layer composites offscreen at its own size, so a column-sized layer
+                        // would clip the bubble's overflowing sides during the pop
                         Box(
-                            modifier = Modifier.graphicsLayer {
-                                alpha = pop.value
-                                scaleX = 0.8f + 0.2f * pop.value
-                                scaleY = 0.8f + 0.2f * pop.value
-                                transformOrigin = TransformOrigin(0.5f, 1f)
-                            },
+                            modifier = Modifier
+                                .wrapContentWidth(unbounded = true)
+                                .graphicsLayer {
+                                    alpha = pop.value
+                                    scaleX = 0.8f + 0.2f * pop.value
+                                    scaleY = 0.8f + 0.2f * pop.value
+                                    transformOrigin = TransformOrigin(0.5f, 1f)
+                                },
                         ) {
                             TooltipBubble(
                                 text = expense.total.toCurrencyString(),
