@@ -1,11 +1,12 @@
 package com.ax.assignment.core.navigation
 
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.only
@@ -48,11 +49,13 @@ private const val ENTER_MS = 400
 private const val EXIT_MS = 350
 private const val MODAL_ENTER_MS = 450
 
-// M3 fade-through for top-level (tab) destinations: outgoing fades out fast,
-// incoming fades in afterwards while scaling up from 92%
-private val tabEnter = fadeIn(tween(260, delayMillis = 90)) +
-    scaleIn(initialScale = 0.92f, animationSpec = tween(260, delayMillis = 90, easing = EmphasizedDecelerate))
-private val tabExit = fadeOut(tween(90))
+// Tab switches are instant — the dominant pattern for bottom navigation
+// (YouTube, Instagram, KakaoTalk, Toss); any fade reads as flicker here
+private val tabEnter = EnterTransition.None
+private val tabExit = ExitTransition.None
+// Splash hands off to home with a gentle fade
+private val splashEnter = fadeIn(tween(300))
+private val splashExit = fadeOut(tween(300))
 
 @Composable
 fun NavGraph(navController: NavHostController) {
@@ -93,7 +96,8 @@ fun NavGraph(navController: NavHostController) {
                             AnimatedContentTransitionScope.SlideDirection.Up,
                             tween(MODAL_ENTER_MS, easing = EmphasizedDecelerate),
                         ) + fadeIn(tween(250))
-                    from == Screen.Splash.route || isTabSwitch(from, to) -> tabEnter
+                    from == Screen.Splash.route -> splashEnter
+                    isTabSwitch(from, to) -> tabEnter
                     else ->
                         slideIntoContainer(
                             AnimatedContentTransitionScope.SlideDirection.Start,
@@ -107,7 +111,8 @@ fun NavGraph(navController: NavHostController) {
                 when {
                     // Underlying screen stays put while the modal slides over it
                     to == Screen.TransactionAdd.route -> fadeOut(tween(MODAL_ENTER_MS))
-                    from == Screen.Splash.route || isTabSwitch(from, to) -> tabExit
+                    from == Screen.Splash.route -> splashExit
+                    isTabSwitch(from, to) -> tabExit
                     else ->
                         slideOutOfContainer(
                             AnimatedContentTransitionScope.SlideDirection.Start,
