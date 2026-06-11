@@ -19,7 +19,7 @@
 4. 미세 개선 2건(빈박스 체크박스, 0원 회색)은 **Figma와 달라서 철회** — 외형 변경 전
    반드시 디자인 프레임 대조 (메모리 figma-frame-is-truth)
 5. 하네스: ui.py CLI(texts/find/tap, 토큰 90%↓), 권한 정비(커밋 ask 해제·acceptEdits·
-   adb allowlist·MSYS env), 자동컴팩트 off + **CTX 50% 임계 훅**(실측 %, 노트 갱신→커밋→/clear 안내 자동)
+   adb allowlist·MSYS env), 자동컴팩트 off + **CTX 30% 임계 훅**(실측 %, 노트 갱신→커밋→/clear 안내 자동)
 
 ## 의도적 결정 (발표 Q&A 대비)
 - 수입 카테고리 미사용 / 키보드 자동 포커스 없음 / % 보정 없음(합 101% 가능) /
