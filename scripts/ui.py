@@ -15,12 +15,19 @@
 #   u.wait(desc="거래 추가")           # back on home = saved
 
 import base64
+import os
 import subprocess
 import time
 import xml.etree.ElementTree as ET
 
-ADB = r"C:\Users\mojis\AppData\Local\Android\Sdk\platform-tools\adb.exe"
-DEFAULT_DEVICE = "R3CT50PWVHA"
+# Resolve adb/device from env so the driver ports across machines/projects:
+# ADB_PATH > ANDROID_HOME/ANDROID_SDK_ROOT > default Windows SDK location.
+ADB = os.environ.get("ADB_PATH") or os.path.join(
+    os.environ.get("ANDROID_HOME")
+    or os.environ.get("ANDROID_SDK_ROOT")
+    or os.path.expanduser(os.path.join("~", "AppData", "Local", "Android", "Sdk")),
+    "platform-tools", "adb.exe")
+DEFAULT_DEVICE = os.environ.get("UI_DEVICE", "R3CT50PWVHA")
 
 
 class UI:
