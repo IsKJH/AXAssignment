@@ -228,7 +228,9 @@ private fun HomeTopBar(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(60.dp)
+                // Match the statistics AppTopBar height (56dp) so the period selector
+                // sits at the same spot on both tabs — no vertical jump when switching
+                .height(56.dp)
                 .padding(horizontal = 16.dp),
             contentAlignment = Alignment.CenterStart,
         ) {
