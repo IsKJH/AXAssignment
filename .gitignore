@@ -20,3 +20,8 @@ local.properties
 /.kotlin/
 .claude/settings.local.json
 __pycache__/
+
+# Demo-seed working artifacts (DB copies, animation frame captures)
+_workspace/seed/budget_db*
+_workspace/seed/check/
+_workspace/seed/frames/
