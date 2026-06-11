@@ -32,8 +32,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -180,9 +184,13 @@ private fun PeriodSelectorRow(
 
 @Composable
 private fun DonutSection(uiState: StatisticsUiState) {
-    val segments = uiState.donutSegments.map { (summary, ratio) ->
-        categoryColor(summary) to ratio
-    }
+    val donut = uiState.donutSegments
+    val segments = donut.map { (summary, ratio) -> categoryColor(summary) to ratio }
+
+    // While pressing/scrubbing the ring, center shows the touched category's name + share
+    var selectedIndex by remember(donut) { mutableStateOf<Int?>(null) }
+    val haptic = LocalHapticFeedback.current
+
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         // Figma 488:898 (SVG 실측): ring stroke 18, inner disc 125 → 9.5dp white gap
         DonutChart(
@@ -191,21 +199,46 @@ private fun DonutSection(uiState: StatisticsUiState) {
             strokeWidth = 18.dp,
             centerDiameter = 125.dp,
             emptyColor = Color(0xFFEEEEEE),
+            onSegmentPress = { index ->
+                if (index != null && index != selectedIndex) {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                }
+                selectedIndex = index
+            },
             centerContent = {
+                val selected = selectedIndex?.let { donut.getOrNull(it) }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "총 지출",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = TextDefault,
-                    )
-                    Text(
-                        text = if (uiState.isEmptyExpense) "0%" else "100%",
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextDefault,
-                        textAlign = TextAlign.Center,
-                    )
+                    if (selected != null) {
+                        val (summary, ratio) = selected
+                        Text(
+                            text = summary.category?.name ?: "미분류",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = categoryColor(summary),
+                            maxLines = 1,
+                        )
+                        Text(
+                            text = "${(ratio * 100).roundToInt()}%",
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = categoryColor(summary),
+                            textAlign = TextAlign.Center,
+                        )
+                    } else {
+                        Text(
+                            text = "총 지출",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = TextDefault,
+                        )
+                        Text(
+                            text = if (uiState.isEmptyExpense) "0%" else "100%",
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextDefault,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
                 }
             },
         )
