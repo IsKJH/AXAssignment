@@ -651,18 +651,26 @@ internal fun RecurringRow(
     val label = if (type == TransactionType.EXPENSE) "정기 지출로 등록" else "정기 수입으로 등록"
 
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            painter = painterResource(
-                if (isRecurring) R.drawable.ic_figma_checkbox_on else R.drawable.ic_figma_checkbox_off,
-            ),
-            contentDescription = null,
-            tint = Color.Unspecified,
-            modifier = Modifier
-                .size(24.dp)
-                .clickable { onToggle() },
-        )
-        Spacer(Modifier.width(4.dp))
-        Text(label, fontSize = 14.sp, lineHeight = 21.sp, color = OnSurface, fontWeight = FontWeight.Medium)
+        // Checkbox and label toggle together — a 24dp icon alone is too small a
+        // target and a label tap silently doing nothing reads as a broken checkbox
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+            ) { onToggle() },
+        ) {
+            Icon(
+                painter = painterResource(
+                    if (isRecurring) R.drawable.ic_figma_checkbox_on else R.drawable.ic_figma_checkbox_off,
+                ),
+                contentDescription = null,
+                tint = Color.Unspecified,
+                modifier = Modifier.size(24.dp),
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(label, fontSize = 14.sp, lineHeight = 21.sp, color = OnSurface, fontWeight = FontWeight.Medium)
+        }
         Box {
             Icon(
                 painter = painterResource(R.drawable.ic_figma_help),

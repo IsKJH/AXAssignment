@@ -126,14 +126,23 @@ fun CategoryManageContent(
     onCategoryDeselected: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
-    var selectedCategoryId by remember(uiState.categories) {
+    // -1L sentinel: manage mode defaults to the first expense category once the
+    // async list arrives. Selection must NOT be keyed on uiState.categories —
+    // add/edit/delete via the sheet would silently reset a deselected (0L) state
+    var selectedCategoryId by remember {
         val id = when {
             initialSelectedId >= 0L -> initialSelectedId
             // Select mode entered with no current category (미분류) — highlight nothing
             onCategorySelected != null -> 0L
-            else -> uiState.categories.firstOrNull { it.type == TransactionType.EXPENSE }?.id ?: 0L
+            else -> -1L
         }
         mutableLongStateOf(id)
+    }
+    LaunchedEffect(uiState.categories) {
+        if (selectedCategoryId == -1L && uiState.categories.isNotEmpty()) {
+            selectedCategoryId =
+                uiState.categories.firstOrNull { it.type == TransactionType.EXPENSE }?.id ?: 0L
+        }
     }
     var editingCategory by remember { mutableStateOf<Category?>(null) }
     var showEditor by remember { mutableStateOf(false) }
