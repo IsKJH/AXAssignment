@@ -110,16 +110,34 @@ fun HelpContent(onNavigateBack: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // Cap content width so cards stay readable on tablets/landscape
-            Column(
-                modifier = Modifier.widthIn(max = 600.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                helpItems.forEachIndexed { index, item ->
-                    HelpStepCard(
-                        number = "${index + 1}",
-                        item = item,
-                        onClick = { guideItem = item },
-                    )
+            Column(modifier = Modifier.widthIn(max = 600.dp)) {
+                Text(
+                    text = "항목을 누르면 단계별 가이드를 볼 수 있어요",
+                    color = TextDescription,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Surface, RoundedCornerShape(8.dp)),
+                ) {
+                    helpItems.forEachIndexed { index, item ->
+                        HelpRow(
+                            number = "${index + 1}",
+                            item = item,
+                            onClick = { guideItem = item },
+                        )
+                        if (index != helpItems.lastIndex) {
+                            Box(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(1.dp)
+                                    .background(Color(0xFFEEEEEE)),
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -131,7 +149,7 @@ fun HelpContent(onNavigateBack: () -> Unit) {
 }
 
 @Composable
-private fun HelpStepCard(
+private fun HelpRow(
     number: String,
     item: HelpItem,
     onClick: () -> Unit,
@@ -139,10 +157,9 @@ private fun HelpStepCard(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Surface, RoundedCornerShape(8.dp))
             .clickable(onClick = onClick)
-            .padding(16.dp),
-        verticalAlignment = Alignment.Top,
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Box(
@@ -160,7 +177,7 @@ private fun HelpStepCard(
         }
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             Text(
                 text = item.title,
@@ -172,15 +189,15 @@ private fun HelpStepCard(
             Text(
                 text = item.description,
                 color = TextDescription,
-                fontSize = 14.sp,
-                lineHeight = 21.sp,
+                fontSize = 13.sp,
+                lineHeight = 19.sp,
             )
         }
         Icon(
             painter = painterResource(R.drawable.ic_figma_chevron_right),
             contentDescription = "가이드 보기",
             tint = TextDescription,
-            modifier = Modifier.size(24.dp).padding(top = 2.dp),
+            modifier = Modifier.size(24.dp),
         )
     }
 }
@@ -566,7 +583,7 @@ private fun rememberHelpItems(): List<HelpItem> = remember {
     listOf(
         HelpItem(
             title = "거래 추가",
-            description = "홈의 + 버튼으로 지출이나 수입을 입력합니다. 날짜는 과거든 미래든 자유롭게 고를 수 있어요.",
+            description = "+ 버튼으로 지출·수입을 입력해요",
             steps = listOf(
                 GuideStep("홈 오른쪽 아래의 + 버튼을 눌러요") { MockFab() },
                 GuideStep("금액과 내역을 입력하고\n카테고리·일시를 선택해요") { MockAmountField() },
@@ -575,7 +592,7 @@ private fun rememberHelpItems(): List<HelpItem> = remember {
         ),
         HelpItem(
             title = "정기 거래 등록",
-            description = "매달 반복되는 구독료나 월급은 정기 거래로 등록하면 자동으로 기록됩니다.",
+            description = "구독료·월급은 매달 자동으로 기록돼요",
             steps = listOf(
                 GuideStep("거래 추가에서 \"정기 지출로 등록\"을 체크해요") { MockRecurringCheck() },
                 GuideStep("선택한 일자에 매달 자동으로 등록돼요") { MockAutoRegister() },
@@ -583,7 +600,7 @@ private fun rememberHelpItems(): List<HelpItem> = remember {
         ),
         HelpItem(
             title = "내역 확인과 수정",
-            description = "거래를 누르면 상세 화면에서 편집하거나 삭제할 수 있습니다.",
+            description = "내역을 눌러 편집하거나 삭제해요",
             steps = listOf(
                 GuideStep("홈에서 거래 내역을 눌러요") { MockTransactionRow() },
                 GuideStep("상세 화면의 편집으로 수정·삭제해요") { MockEditAction() },
@@ -592,7 +609,7 @@ private fun rememberHelpItems(): List<HelpItem> = remember {
         ),
         HelpItem(
             title = "정산 주기 설정",
-            description = "설정 → 시작일 설정에서 매달 정산을 시작할 날짜를 고르면 홈과 통계가 그 주기로 계산됩니다.",
+            description = "시작일을 바꾸면 주기가 다시 계산돼요",
             steps = listOf(
                 GuideStep("설정에서 시작일 설정으로 들어가요") { MockSettingsRow() },
                 GuideStep("1~28일 중 고르면 홈·통계에 바로 반영돼요") { MockDayPicker() },
@@ -600,7 +617,7 @@ private fun rememberHelpItems(): List<HelpItem> = remember {
         ),
         HelpItem(
             title = "통계 보기",
-            description = "통계 탭에서 카테고리별 지출 비중과 최근 소비 흐름을 확인합니다.",
+            description = "카테고리별 비중과 소비 흐름을 확인해요",
             steps = listOf(
                 GuideStep("도넛을 누른 채 문지르면\n카테고리별 비중이 보여요") { MockDonut() },
                 GuideStep("6개월 내역에서 소비 흐름을 확인해요") { MockSixMonthButton() },
@@ -608,7 +625,7 @@ private fun rememberHelpItems(): List<HelpItem> = remember {
         ),
         HelpItem(
             title = "주기 이동",
-            description = "홈과 통계 화면을 좌우로 스와이프하거나 상단 화살표로 이전·다음 주기를 볼 수 있습니다.",
+            description = "좌우 스와이프로 주기를 이동해요",
             steps = listOf(
                 GuideStep("화면을 좌우로 쓸어넘기거나\n화살표를 눌러 주기를 이동해요") { MockSwipe() },
             ),
