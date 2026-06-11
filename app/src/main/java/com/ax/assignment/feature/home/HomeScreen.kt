@@ -38,7 +38,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -53,7 +52,6 @@ import com.ax.assignment.core.component.MonthSelector
 import com.ax.assignment.core.component.StaggeredAppear
 import com.ax.assignment.core.component.SummaryCard
 import com.ax.assignment.core.component.TransactionItem
-import com.ax.assignment.core.component.periodLabel
 import com.ax.assignment.core.component.rememberEntranceTime
 import com.ax.assignment.core.navigation.Screen
 import com.ax.assignment.core.theme.AXAssignmentTheme
@@ -102,7 +100,8 @@ fun HomeContent(
     Scaffold(
         topBar = {
             HomeTopBar(
-                periodLabel = periodLabel(uiState.periodStart, uiState.periodEnd),
+                periodStart = uiState.periodStart,
+                periodEnd = uiState.periodEnd,
                 onPrev = { onEvent(HomeEvent.PrevMonth) },
                 onNext = { onEvent(HomeEvent.NextMonth) },
             )
@@ -215,7 +214,8 @@ private fun HomeFab(
 
 @Composable
 private fun HomeTopBar(
-    periodLabel: AnnotatedString,
+    periodStart: LocalDate,
+    periodEnd: LocalDate,
     onPrev: () -> Unit,
     onNext: () -> Unit,
 ) {
@@ -244,7 +244,8 @@ private fun HomeTopBar(
 
         // 월 네비게이션 행 — ‹ [기간 텍스트] ›
         MonthSelector(
-            periodLabel = periodLabel,
+            periodStart = periodStart,
+            periodEnd = periodEnd,
             onPrev = onPrev,
             onNext = onNext,
         )

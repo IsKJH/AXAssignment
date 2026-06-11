@@ -3,6 +3,7 @@ package com.ax.assignment.core.component
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -13,12 +14,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,24 +27,50 @@ import com.ax.assignment.core.util.periodRangeParts
 import java.time.LocalDate
 
 /**
- * Day range in the default text color with the out-of-year tag appended as a
- * quiet grey " · 2025" badge. Shared by the home and statistics period selectors.
+ * Period label shared by the home and statistics selectors. The Figma day range
+ * stays on its own line in the default color; for periods outside the current
+ * year a quiet grey year tag sits on a second line below (a calendar-style
+ * two-line header), which keeps year-straddling ranges like "2025~2026" tidy
+ * instead of wrapping mid-line.
  */
-fun periodLabel(start: LocalDate, end: LocalDate, today: LocalDate = LocalDate.now()): AnnotatedString {
+@Composable
+fun PeriodLabelText(
+    start: LocalDate,
+    end: LocalDate,
+    modifier: Modifier = Modifier,
+    today: LocalDate = LocalDate.now(),
+) {
     val (base, year) = periodRangeParts(start, end, today)
-    return buildAnnotatedString {
-        append(base)
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = base,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = TextDefault,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+        )
         if (year != null) {
-            withStyle(SpanStyle(color = TextDescription, fontWeight = FontWeight.Medium)) {
-                append("  ·  $year")
-            }
+            Text(
+                text = year,
+                fontSize = 13.sp,
+                lineHeight = 16.sp,
+                fontWeight = FontWeight.Medium,
+                color = TextDescription,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+            )
         }
     }
 }
 
 @Composable
 fun MonthSelector(
-    periodLabel: AnnotatedString,
+    periodStart: LocalDate,
+    periodEnd: LocalDate,
     onPrev: () -> Unit,
     onNext: () -> Unit,
     modifier: Modifier = Modifier,
@@ -73,12 +96,9 @@ fun MonthSelector(
             )
         }
 
-        Text(
-            text = periodLabel,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextDefault,
-            textAlign = TextAlign.Center,
+        PeriodLabelText(
+            start = periodStart,
+            end = periodEnd,
             modifier = Modifier.weight(1f),
         )
 
@@ -103,7 +123,8 @@ fun MonthSelector(
 private fun MonthSelectorPreview() {
     AXAssignmentTheme {
         MonthSelector(
-            periodLabel = AnnotatedString("6월1일 ~ 6월30일"),
+            periodStart = LocalDate.of(2026, 6, 1),
+            periodEnd = LocalDate.of(2026, 6, 30),
             onPrev = {},
             onNext = {},
         )

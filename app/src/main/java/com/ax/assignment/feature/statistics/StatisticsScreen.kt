@@ -54,8 +54,8 @@ import com.ax.assignment.BudgetApplication
 import com.ax.assignment.R
 import com.ax.assignment.core.component.AppTopBar
 import com.ax.assignment.core.component.DonutChart
+import com.ax.assignment.core.component.PeriodLabelText
 import com.ax.assignment.core.component.StaggeredAppear
-import com.ax.assignment.core.component.periodLabel
 import com.ax.assignment.core.component.rememberEntranceTime
 import com.ax.assignment.core.navigation.Screen
 import com.ax.assignment.core.theme.AXAssignmentTheme
@@ -161,13 +161,7 @@ private fun PeriodSelectorRow(
                 tint = TextDefault,
             )
         }
-        Text(
-            text = periodLabel(start, end),
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextDefault,
-            textAlign = TextAlign.Center,
-        )
+        PeriodLabelText(start = start, end = end)
         IconButton(onClick = onNext, modifier = Modifier.size(28.dp)) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
