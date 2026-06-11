@@ -29,3 +29,7 @@ _workspace/seed/frames/
 # QA agent screenshots / scratch artifacts
 _workspace/qa*.png
 _workspace/qa*.xml
+_workspace/hf*.png
+_workspace/home-period.png
+_workspace/stat-period.png
+_workspace/qa-*.png
