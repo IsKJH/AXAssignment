@@ -1,8 +1,13 @@
 package com.ax.assignment.feature.home
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,6 +24,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -28,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -164,9 +171,21 @@ private fun HomeFab(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val pressScale by animateFloatAsState(
+        targetValue = if (pressed) 0.86f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "fabPressScale",
+    )
+
     Box(
         modifier = modifier
             .size(56.dp)
+            .graphicsLayer {
+                scaleX = pressScale
+                scaleY = pressScale
+            }
             .shadow(
                 elevation = 10.dp,
                 shape = CircleShape,
@@ -174,7 +193,11 @@ private fun HomeFab(
                 spotColor = Color(0x1A000000),
             )
             .background(FabFill, CircleShape)
-            .clickable(onClick = onClick),
+            .clickable(
+                interactionSource = interactionSource,
+                indication = ripple(),
+                onClick = onClick,
+            ),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -267,15 +290,16 @@ private fun HomeListContent(
             )
         }
 
-        // 날짜별 섹션 헤더 + 거래 항목
+        // 날짜별 섹션 헤더 + 거래 항목 — animateItem으로 삭제 시 빈자리 메꿈/등장 페이드
         grouped.forEach { (date, txList) ->
             item(key = "header-$date") {
-                DateSectionHeader(date = date)
+                DateSectionHeader(date = date, modifier = Modifier.animateItem())
             }
             items(txList, key = { it.id }) { tx ->
                 TransactionItem(
                     transaction = tx,
                     onClick = { onNavigateToDetail(tx.id) },
+                    modifier = Modifier.animateItem(),
                 )
             }
         }
@@ -283,14 +307,14 @@ private fun HomeListContent(
 }
 
 @Composable
-private fun DateSectionHeader(date: LocalDate) {
+private fun DateSectionHeader(date: LocalDate, modifier: Modifier = Modifier) {
     Text(
         text = "${date.monthValue}월 ${date.dayOfMonth}일",
         fontSize = 14.sp,
         fontWeight = FontWeight.Medium,
         lineHeight = 21.sp,
         color = TextDefault,
-        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 4.dp),
+        modifier = modifier.padding(start = 16.dp, end = 16.dp, bottom = 4.dp),
     )
 }
 

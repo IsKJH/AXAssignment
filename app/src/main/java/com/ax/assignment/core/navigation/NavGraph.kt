@@ -1,9 +1,11 @@
 package com.ax.assignment.core.navigation
 
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.only
@@ -35,6 +37,23 @@ import com.ax.assignment.feature.transaction.TransactionDetailScreen
 
 private val bottomBarRoutes = setOf(Screen.Home.route, Screen.Statistics.route, Screen.Settings.route)
 
+// Bottom-tab switches cross-fade (a lateral slide implies hierarchy the tabs don't have)
+private fun isTabSwitch(from: String?, to: String?) =
+    from in bottomBarRoutes && to in bottomBarRoutes
+
+// Material 3 motion tokens — emphasized easing for screen-level transitions
+private val EmphasizedDecelerate = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)
+private val EmphasizedAccelerate = CubicBezierEasing(0.3f, 0f, 0.8f, 0.15f)
+private const val ENTER_MS = 400
+private const val EXIT_MS = 350
+private const val MODAL_ENTER_MS = 450
+
+// M3 fade-through for top-level (tab) destinations: outgoing fades out fast,
+// incoming fades in afterwards while scaling up from 92%
+private val tabEnter = fadeIn(tween(260, delayMillis = 90)) +
+    scaleIn(initialScale = 0.92f, animationSpec = tween(260, delayMillis = 90, easing = EmphasizedDecelerate))
+private val tabExit = fadeOut(tween(90))
+
 @Composable
 fun NavGraph(navController: NavHostController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -65,16 +84,62 @@ fun NavGraph(navController: NavHostController) {
             startDestination = Screen.Splash.route,
             modifier = Modifier.padding(paddingValues),
             enterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(300)) + fadeIn(tween(300))
+                val from = initialState.destination.route
+                val to = targetState.destination.route
+                when {
+                    // Add screen opens like a modal sheet — slide up from the bottom
+                    to == Screen.TransactionAdd.route ->
+                        slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Up,
+                            tween(MODAL_ENTER_MS, easing = EmphasizedDecelerate),
+                        ) + fadeIn(tween(250))
+                    from == Screen.Splash.route || isTabSwitch(from, to) -> tabEnter
+                    else ->
+                        slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Start,
+                            tween(ENTER_MS, easing = EmphasizedDecelerate),
+                        ) + fadeIn(tween(ENTER_MS))
+                }
             },
             exitTransition = {
-                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Start, tween(300)) + fadeOut(tween(300))
+                val from = initialState.destination.route
+                val to = targetState.destination.route
+                when {
+                    // Underlying screen stays put while the modal slides over it
+                    to == Screen.TransactionAdd.route -> fadeOut(tween(MODAL_ENTER_MS))
+                    from == Screen.Splash.route || isTabSwitch(from, to) -> tabExit
+                    else ->
+                        slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Start,
+                            tween(ENTER_MS, easing = EmphasizedDecelerate),
+                        ) + fadeOut(tween(ENTER_MS))
+                }
             },
             popEnterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(300)) + fadeIn(tween(300))
+                when {
+                    initialState.destination.route == Screen.TransactionAdd.route -> fadeIn(tween(EXIT_MS))
+                    isTabSwitch(initialState.destination.route, targetState.destination.route) -> tabEnter
+                    else ->
+                        slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.End,
+                            tween(ENTER_MS, easing = EmphasizedDecelerate),
+                        ) + fadeIn(tween(ENTER_MS))
+                }
             },
             popExitTransition = {
-                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.End, tween(300)) + fadeOut(tween(300))
+                when {
+                    initialState.destination.route == Screen.TransactionAdd.route ->
+                        slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Down,
+                            tween(EXIT_MS, easing = EmphasizedAccelerate),
+                        ) + fadeOut(tween(EXIT_MS))
+                    isTabSwitch(initialState.destination.route, targetState.destination.route) -> tabExit
+                    else ->
+                        slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.End,
+                            tween(ENTER_MS, easing = EmphasizedDecelerate),
+                        ) + fadeOut(tween(ENTER_MS))
+                }
             },
         ) {
             composable(Screen.Splash.route) {
