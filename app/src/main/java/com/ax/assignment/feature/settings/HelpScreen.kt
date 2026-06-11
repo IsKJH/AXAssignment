@@ -42,7 +42,10 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke as StrokeStyle
 import androidx.compose.ui.res.painterResource
@@ -245,12 +248,14 @@ private fun GuideTourDialog(item: HelpItem, onDismiss: () -> Unit) {
                 HorizontalPager(state = pagerState) { index ->
                     val step = item.steps[index]
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        // Visual stage — mini mockup of the real UI element
+                        // Visual stage — mini mockup of the real UI element.
+                        // Clipped so the pulse ring can never bleed outside the box
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(150.dp)
-                                .background(BrandLight, RoundedCornerShape(12.dp)),
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(BrandLight),
                             contentAlignment = Alignment.Center,
                         ) {
                             step.visual()
@@ -310,7 +315,9 @@ private fun GuideTourDialog(item: HelpItem, onDismiss: () -> Unit) {
     }
 }
 
-/** Coach-mark pulse — an expanding, fading ring matching the element's shape. */
+/** Coach-mark pulse — a ring that expands a fixed 12dp outward and fades.
+ *  Fixed-dp growth (not proportional scale) keeps wide elements from
+ *  overflowing the stage box. */
 @Composable
 private fun PulseSpotlight(
     modifier: Modifier = Modifier,
@@ -325,23 +332,24 @@ private fun PulseSpotlight(
         label = "pulseProgress",
     )
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .scale(1f + progress * 0.35f),
-        ) {
-            Canvas(Modifier.fillMaxSize()) {
-                val color = NavigationOn.copy(alpha = (1f - progress) * 0.5f)
-                val stroke = StrokeStyle(width = 3.dp.toPx())
-                if (rounded) {
-                    drawRoundRect(
-                        color = color,
-                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(14.dp.toPx()),
-                        style = stroke,
-                    )
-                } else {
-                    drawCircle(color = color, style = stroke)
-                }
+        Canvas(Modifier.matchParentSize()) {
+            val expand = progress * 12.dp.toPx()
+            val color = NavigationOn.copy(alpha = (1f - progress) * 0.5f)
+            val stroke = StrokeStyle(width = 3.dp.toPx())
+            if (rounded) {
+                drawRoundRect(
+                    color = color,
+                    topLeft = Offset(-expand, -expand),
+                    size = Size(size.width + expand * 2, size.height + expand * 2),
+                    cornerRadius = CornerRadius(14.dp.toPx() + expand),
+                    style = stroke,
+                )
+            } else {
+                drawCircle(
+                    color = color,
+                    radius = size.minDimension / 2 + expand,
+                    style = stroke,
+                )
             }
         }
         content()
