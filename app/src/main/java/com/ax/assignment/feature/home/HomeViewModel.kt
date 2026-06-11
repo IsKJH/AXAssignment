@@ -28,6 +28,8 @@ class HomeViewModel(
 ) : ViewModel() {
 
     private val initialPeriodStart = currentPeriodStart(LocalDate.now(), settingsRepo.startDay.value)
+    private val initialRange =
+        periodRange(initialPeriodStart.year, initialPeriodStart.monthValue, settingsRepo.startDay.value)
     private val _selectedYear = MutableStateFlow(initialPeriodStart.year)
     private val _selectedMonth = MutableStateFlow(initialPeriodStart.monthValue)
 
@@ -66,7 +68,18 @@ class HomeViewModel(
                     )
                 }
             }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5_000),
+                // Seed the initial value with the real current period so the first
+                // frame doesn't flash a default month before the flow emits
+                HomeUiState(
+                    selectedYear = initialPeriodStart.year,
+                    selectedMonth = initialPeriodStart.monthValue,
+                    periodStart = initialRange.start,
+                    periodEnd = initialRange.end,
+                ),
+            )
 
     fun onEvent(event: HomeEvent) = when (event) {
         HomeEvent.PrevMonth -> moveToPrevMonth()

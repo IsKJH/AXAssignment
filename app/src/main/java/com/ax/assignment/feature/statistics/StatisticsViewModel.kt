@@ -28,6 +28,8 @@ class StatisticsViewModel(
 ) : ViewModel() {
 
     private val initialPeriodStart = currentPeriodStart(LocalDate.now(), settingsRepo.startDay.value)
+    private val initialRange =
+        periodRange(initialPeriodStart.year, initialPeriodStart.monthValue, settingsRepo.startDay.value)
     private val _selectedYear = MutableStateFlow(initialPeriodStart.year)
     private val _selectedMonth = MutableStateFlow(initialPeriodStart.monthValue)
 
@@ -75,7 +77,18 @@ class StatisticsViewModel(
                     )
                 }
             }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), StatisticsUiState())
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5_000),
+                // Seed with the real current period so the label/range doesn't flash
+                // a default month before the flow emits
+                StatisticsUiState(
+                    selectedYear = initialPeriodStart.year,
+                    selectedMonth = initialPeriodStart.monthValue,
+                    periodStart = initialRange.start,
+                    periodEnd = initialRange.end,
+                ),
+            )
 
     fun onEvent(event: StatisticsEvent) = when (event) {
         StatisticsEvent.PrevMonth -> moveToPrevMonth()
