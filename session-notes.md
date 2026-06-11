@@ -38,5 +38,10 @@
 
 ## 작업 팁
 - Figma: get_design_context/get_screenshot(base64), SVG 실측이 수치 정답
-- 바텀시트/다이얼로그 터치: 스크린샷 좌표 ≠ 실좌표 — list_elements_on_screen 필수
-- 키보드가 하단 버튼 가림 — keyevent 4로 닫고 탭할 것
+- mobile-mcp 규칙(좌표 환산·요소 리스트 1순위·스와이프 방향·키보드 BACK)은
+  CLAUDE.md + verify-screen-on-device 스킬에 정리됨 (2026-06-11 웹 조사 반영)
+- **devicekit APK 설치됨** → type_keys로 한글 직접 입력 가능 — 시연 데이터 자동 입력 OK
+- **고속 입력**: `python -X utf8 scripts/device_input.py add <금액> <메모> [카테고리]` — ~13초/건,
+  bulk JSON 지원. 기반은 범용 드라이버 `scripts/ui.py`(좌표 0, 셀렉터+게이트) — 새 화면은 플로우만 추가
+- gradle.properties에 configuration-cache 활성화 — 무변경 installDebug 20초→7초
+- 다음 단계 후보(발표 후): python-uiautomator2(상주 데몬, dump 2.3초→ms), Roborazzi(기기 없는 스크린샷 검증)

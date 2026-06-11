@@ -126,15 +126,19 @@ com.ax.assignment/
 ## 빌드 & 실행
 
 ```bash
-export JAVA_HOME="/c/Users/mojis/AppData/Local/Programs/Android Studio/jbr"
-export PATH="$JAVA_HOME/bin:$PATH"
+# JAVA_HOME은 전역 env(~/.claude/settings.json)에 설정됨 — export 접두사 금지
+# (export를 붙이면 권한 allowlist에 매칭되지 않아 매번 승인 프롬프트 발생)
 ./gradlew installDebug
 adb shell am start -n com.ax.assignment/.MainActivity
 ```
 
-### 기기 좌표 (1080×2640)
+### 기기 좌표 & mobile-mcp 규칙 (1080×2640)
 BottomNav 홈(156,2358)/통계(504,2358)/설정(852,2358), FAB(948,2181)
-※ 바텀시트/다이얼로그는 스크린샷 좌표 ≠ 터치 좌표 — `mobile_list_elements_on_screen`으로 실좌표 확인 필수
+- 탭/스와이프 좌표 = 항상 실픽셀. 스크린샷(축소본) 좌표는 ×(1080/이미지폭) 환산
+- 클릭은 `mobile_list_elements_on_screen` bounds 1순위 — 스크린샷 추정은 최후 수단
+- 스와이프 direction = 손가락 방향(down=이전 콘텐츠). x/y/distance로 영역 한정 가능
+- 키보드가 하단 버튼 가림 → `press_button("BACK")` 후 탭. 한글은 devicekit APK 설치됨(직접 입력 OK)
+- 스크린샷 400 에러 시 `save_screenshot`+Read 우회. 상세 팁: verify-screen-on-device 스킬
 
 ---
 

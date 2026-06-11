@@ -19,3 +19,4 @@ local.properties
 /.idea/
 /.kotlin/
 .claude/settings.local.json
+__pycache__/
