@@ -71,9 +71,17 @@ com.ax.assignment/
 - **DB v5** (`budget_db`), fallbackToDestructiveMigration — 버전 올리면 데이터 초기화됨
 - `Transaction.date: LocalDateTime` (TypeConverter epochMilli)
 - **정기 거래(seriesId)**: 등록 시 앵커+11개월 인스턴스 생성(`RECURRING_MONTHS=12`).
+  **매월 자동 연장**: 앱 시작 시 topUpRecurringSeries()가 살아있는 시리즈를 현재 월+11까지 보충
+  (최신 인스턴스가 과거인 시리즈 = 중단된 것 — 연장 안 함).
   범위 수정/삭제(이달만/이후/전체) = DAO updateSeriesFrom/All, deleteSeriesFrom/All.
-  해제(502:1277) = 이후 삭제+일반화 / 편집에서 신규 체크 = registerRecurring(12개월 생성) — 양방향
+  이후 삭제 시 남은 과거 인스턴스는 clearSeriesFlags로 일반화(정기 표기 해제).
+  해제(502:1277) = 이후 삭제+전체 일반화 / 편집에서 신규 체크 = registerRecurring(12개월 생성) — 양방향
 - **% 표시**: 소수점 반올림, 최소 1% 보정 없음 (Figma 코멘트 정책)
+- **통계 지난달 대비**: 지난달 데이터 없으면(prevAmount=0) "0원" 회색 — 증가 빨강 아님 (488:1046)
+- **날짜 입력 제한 없음**(16:172): 드럼롤 오늘 ±1년, 저장 시 속한 주기에 자동 분류.
+  진입 시 1회만 조회 주기로 기본값 클램프(rememberSaveable 가드 — 카테고리 왕복 시 재클램프 금지)
+- **카테고리 선택 모드**: 선택 항목 재탭 = 해제(결과 0L → 미분류), 뒤로가기로 복귀 (17:178).
+  홈 거래 정렬은 date DESC, id DESC(동시각 타이브레이커)
 - 커스텀 카테고리 색: CategoryViewModel.CUSTOM_CATEGORY_COLORS 8색에서 미사용 색 자동 배정
 - **주기**: SettingsRepository.startDay(1~28) 기반 `periodRange()`. 통계 trend는
   실제 현재 주기 anchoring (선택 주기와 무관 — 6개월 내역 버튼/페이지 일관성)

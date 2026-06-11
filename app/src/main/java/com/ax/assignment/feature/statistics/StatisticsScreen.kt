@@ -399,6 +399,8 @@ private fun CategoryRow(comparison: CategoryComparison, showDivider: Boolean) {
 
     val manFormat = java.text.NumberFormat.getNumberInstance(java.util.Locale.KOREA)
     val (diffText, diffColor) = when {
+        // Spec 488:1046 — no last-month data counts as "0원" (gray), not an increase
+        comparison.prevAmount == 0L -> "지난달 대비 0 원" to TextDescription
         diffInMan > 0 -> "지난달 대비 +${manFormat.format(diffInMan)} 만원" to HomeExpenseAmount
         diffInMan < 0 -> "지난달 대비 -${manFormat.format(-diffInMan)} 만원" to NavigationOn
         else -> "지난달 대비 0 원" to TextDescription

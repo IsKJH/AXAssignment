@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TransactionDao {
-    @Query("SELECT * FROM transactions WHERE date >= :startMs AND date <= :endMs ORDER BY date DESC")
+    @Query("SELECT * FROM transactions WHERE date >= :startMs AND date <= :endMs ORDER BY date DESC, id DESC")
     fun getByDateRange(startMs: Long, endMs: Long): Flow<List<TransactionEntity>>
 
     @Query("SELECT * FROM transactions WHERE id = :id")
@@ -58,6 +58,16 @@ interface TransactionDao {
 
     @Query("DELETE FROM transactions WHERE seriesId = :seriesId")
     suspend fun deleteSeriesAll(seriesId: Long)
+
+    @Query("UPDATE transactions SET isRecurring = 0, seriesId = NULL WHERE seriesId = :seriesId")
+    suspend fun clearSeriesFlags(seriesId: Long)
+
+    @Query(
+        "SELECT t.* FROM transactions t INNER JOIN " +
+            "(SELECT seriesId AS sid, MAX(date) AS maxDate FROM transactions WHERE seriesId IS NOT NULL GROUP BY seriesId) m " +
+            "ON t.seriesId = m.sid AND t.date = m.maxDate",
+    )
+    suspend fun getLatestPerSeries(): List<TransactionEntity>
 }
 
 data class CategoryTotal(

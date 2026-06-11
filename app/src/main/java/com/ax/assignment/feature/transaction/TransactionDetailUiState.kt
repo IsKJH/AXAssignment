@@ -42,7 +42,7 @@ sealed class TransactionDetailEvent {
     data class SetAmount(val value: String) : TransactionDetailEvent()
     data class SetType(val type: TransactionType) : TransactionDetailEvent()
     data class SetMemo(val memo: String) : TransactionDetailEvent()
-    data class SetCategory(val category: Category) : TransactionDetailEvent()
+    data class SetCategory(val category: Category?) : TransactionDetailEvent()
     data class SetDate(val date: LocalDateTime) : TransactionDetailEvent()
     object ToggleRecurring : TransactionDetailEvent()
 }

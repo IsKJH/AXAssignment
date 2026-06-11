@@ -45,6 +45,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -126,10 +127,16 @@ fun TransactionAddScreen(
             navController.popBackStack()
         }
     }
-    LaunchedEffect(periodStart, periodEnd) {
-        val clamped = uiState.date.coerceToDateRange(periodStart, periodEnd)
-        if (clamped != uiState.date) {
-            viewModel.onEvent(TransactionEvent.SetDate(clamped))
+    // Default the date into the viewed period once on entry; re-runs after a
+    // category-select round trip would override a user-picked out-of-period date
+    var defaultDateApplied by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        if (!defaultDateApplied) {
+            defaultDateApplied = true
+            val clamped = uiState.date.coerceToDateRange(periodStart, periodEnd)
+            if (clamped != uiState.date) {
+                viewModel.onEvent(TransactionEvent.SetDate(clamped))
+            }
         }
     }
 
@@ -138,7 +145,11 @@ fun TransactionAddScreen(
         savedStateHandle?.getStateFlow("selected_category_id", -1L) ?: MutableStateFlow(-1L)
     }.collectAsStateWithLifecycle()
     LaunchedEffect(categoryIdResult, uiState.categories) {
-        if (categoryIdResult >= 0L && uiState.categories.isNotEmpty()) {
+        if (categoryIdResult == 0L) {
+            // Deselected on the category screen — back out to 미분류
+            viewModel.onEvent(TransactionEvent.SetCategory(null))
+            savedStateHandle?.remove<Long>("selected_category_id")
+        } else if (categoryIdResult > 0L && uiState.categories.isNotEmpty()) {
             val cat = uiState.categories.find { it.id == categoryIdResult }
             if (cat != null) {
                 viewModel.onEvent(TransactionEvent.SetCategory(cat))
@@ -149,8 +160,6 @@ fun TransactionAddScreen(
 
     TransactionAddContent(
         uiState = uiState,
-        periodStart = periodStart,
-        periodEnd = periodEnd,
         onEvent = viewModel::onEvent,
         onNavigateBack = { navController.popBackStack() },
         onNavigateToCategorySelect = {
@@ -162,8 +171,6 @@ fun TransactionAddScreen(
 @Composable
 fun TransactionAddContent(
     uiState: TransactionUiState,
-    periodStart: LocalDate? = null,
-    periodEnd: LocalDate? = null,
     onEvent: (TransactionEvent) -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToCategorySelect: () -> Unit = {},
@@ -239,8 +246,6 @@ fun TransactionAddContent(
     if (showDateTimePicker) {
         FloatingDateTimePicker(
             initialDateTime = uiState.date,
-            periodStart = periodStart,
-            periodEnd = periodEnd,
             onDismiss = { showDateTimePicker = false },
             onConfirm = { dt ->
                 onEvent(TransactionEvent.SetDate(dt))
@@ -340,18 +345,17 @@ private fun LocalDateTime.coerceToDateRange(start: LocalDate, end: LocalDate): L
 @Composable
 internal fun FloatingDateTimePicker(
     initialDateTime: LocalDateTime,
-    periodStart: LocalDate? = null,
-    periodEnd: LocalDate? = null,
     onDismiss: () -> Unit,
     onConfirm: (LocalDateTime) -> Unit,
 ) {
     val today = LocalDate.now()
-    val startDate = periodStart ?: today.withDayOfMonth(1)
-    val endDate = periodEnd ?: startDate.withDayOfMonth(startDate.lengthOfMonth())
-    val dates = remember(startDate, endDate) {
-        generateSequence(startDate) { date ->
+    // Spec 16:172 — no date entry restriction; ±1 year also covers editing
+    // future recurring instances (up to 11 months ahead)
+    val dates = remember(today) {
+        val endDate = today.plusYears(1)
+        generateSequence(today.minusYears(1)) { date ->
             date.plusDays(1).takeIf { it <= endDate }
-        }.toList().ifEmpty { listOf(startDate) }
+        }.toList()
     }
     val todayIndex = dates.indexOfFirst { it == today }.coerceAtLeast(0)
 

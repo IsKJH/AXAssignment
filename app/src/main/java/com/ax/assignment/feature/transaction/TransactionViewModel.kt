@@ -30,8 +30,13 @@ class TransactionViewModel(
                 val current = _uiState.value
                 _uiState.value = current.copy(
                     categories = cats,
-                    selectedCategory = current.selectedCategory
-                        ?: cats.firstOrNull { it.type == current.type },
+                    // Default-fill only on first load; a null afterwards means the user
+                    // explicitly deselected (미분류) and must stay null
+                    selectedCategory = if (current.categories.isEmpty()) {
+                        current.selectedCategory ?: cats.firstOrNull { it.type == current.type }
+                    } else {
+                        current.selectedCategory
+                    },
                 )
             }
         }

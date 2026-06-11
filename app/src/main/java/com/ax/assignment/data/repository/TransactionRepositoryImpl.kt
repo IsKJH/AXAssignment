@@ -15,7 +15,9 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.YearMonth
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 
 class TransactionRepositoryImpl(
     private val transactionDao: TransactionDao,
@@ -152,8 +154,11 @@ class TransactionRepositoryImpl(
         }
         when (scope) {
             RecurringScope.THIS_MONTH -> transactionDao.delete(transaction.toEntity())
-            RecurringScope.THIS_AND_FUTURE ->
+            RecurringScope.THIS_AND_FUTURE -> {
                 transactionDao.deleteSeriesFrom(seriesId, transaction.date.toEpochMillis())
+                // Spec 7:149 — past instances are kept but unregistered from the series
+                transactionDao.clearSeriesFlags(seriesId)
+            }
             RecurringScope.ALL -> transactionDao.deleteSeriesAll(seriesId)
         }
     }
@@ -174,12 +179,31 @@ class TransactionRepositoryImpl(
     override suspend fun unregisterRecurring(transaction: Transaction) {
         val seriesId = transaction.seriesId
         if (seriesId != null) {
-            // Remove only future instances; keep this one as a normal transaction
+            // Remove only future instances; past ones stay as normal transactions
             transactionDao.deleteSeriesFrom(seriesId, transaction.date.toEpochMillis() + 1)
+            transactionDao.clearSeriesFlags(seriesId)
         }
         transactionDao.update(
             transaction.copy(isRecurring = false, seriesId = null).toEntity(),
         )
+    }
+
+    // Spec 16:172 — each new month the series gains the next month, so coverage
+    // always spans RECURRING_MONTHS months ahead. Runs idempotently on app start.
+    override suspend fun topUpRecurringSeries() {
+        val currentMonth = YearMonth.now()
+        val targetMonth = currentMonth.plusMonths(RECURRING_MONTHS - 1)
+        transactionDao.getLatestPerSeries().forEach { latest ->
+            val latestMonth = YearMonth.from(latest.date)
+            // A series whose newest instance is already in the past was truncated — don't revive it
+            if (latestMonth < currentMonth) return@forEach
+            val monthsToAdd = ChronoUnit.MONTHS.between(latestMonth, targetMonth)
+            if (monthsToAdd <= 0) return@forEach
+            val newInstances = (1..monthsToAdd).map { offset ->
+                latest.copy(id = 0L, date = latest.date.plusMonths(offset))
+            }
+            transactionDao.insertAll(newInstances)
+        }
     }
 
     private fun LocalDateTime.toEpochMillis(): Long =

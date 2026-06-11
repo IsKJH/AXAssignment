@@ -106,6 +106,10 @@ fun CategoryManageScreen(
             navController.previousBackStackEntry?.savedStateHandle?.set("selected_category_id", category.id)
             navController.popBackStack()
         } else null,
+        onCategoryDeselected = if (isSelectMode) {
+            // 0L marks "no category" (미분류) for the caller
+            { navController.previousBackStackEntry?.savedStateHandle?.set("selected_category_id", 0L) }
+        } else null,
     )
 }
 
@@ -117,11 +121,16 @@ fun CategoryManageContent(
     onNavigateBack: () -> Unit,
     initialSelectedId: Long = -1L,
     onCategorySelected: ((Category) -> Unit)? = null,
+    onCategoryDeselected: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     var selectedCategoryId by remember(uiState.categories) {
-        val id = if (initialSelectedId >= 0L) initialSelectedId
-            else uiState.categories.firstOrNull { it.type == TransactionType.EXPENSE }?.id ?: 0L
+        val id = when {
+            initialSelectedId >= 0L -> initialSelectedId
+            // Select mode entered with no current category (미분류) — highlight nothing
+            onCategorySelected != null -> 0L
+            else -> uiState.categories.firstOrNull { it.type == TransactionType.EXPENSE }?.id ?: 0L
+        }
         mutableLongStateOf(id)
     }
     var editingCategory by remember { mutableStateOf<Category?>(null) }
@@ -161,7 +170,13 @@ fun CategoryManageContent(
                     isSelected = category.id == selectedCategoryId,
                     onClick = {
                         if (onCategorySelected != null) {
-                            onCategorySelected(category)
+                            if (selectedCategoryId == category.id) {
+                                // Spec 17:178 — re-tap deselects; back then returns unselected
+                                selectedCategoryId = 0L
+                                onCategoryDeselected?.invoke()
+                            } else {
+                                onCategorySelected(category)
+                            }
                         } else {
                             selectedCategoryId = if (selectedCategoryId == category.id) 0L else category.id
                         }
@@ -177,7 +192,13 @@ fun CategoryManageContent(
                     isSelected = category.id == selectedCategoryId,
                     onClick = {
                         if (onCategorySelected != null) {
-                            onCategorySelected(category)
+                            if (selectedCategoryId == category.id) {
+                                // Spec 17:178 — re-tap deselects; back then returns unselected
+                                selectedCategoryId = 0L
+                                onCategoryDeselected?.invoke()
+                            } else {
+                                onCategorySelected(category)
+                            }
                         } else {
                             selectedCategoryId = if (selectedCategoryId == category.id) 0L else category.id
                         }

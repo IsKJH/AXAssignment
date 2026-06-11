@@ -106,7 +106,11 @@ fun TransactionDetailScreen(navController: NavController, transactionId: Long) {
         savedStateHandle?.getStateFlow("selected_category_id", -1L) ?: kotlinx.coroutines.flow.MutableStateFlow(-1L)
     }.collectAsStateWithLifecycle()
     LaunchedEffect(categoryIdResult, uiState.categories) {
-        if (categoryIdResult >= 0L && uiState.categories.isNotEmpty()) {
+        if (categoryIdResult == 0L) {
+            // Deselected on the category screen — back out to 미분류
+            viewModel.onEvent(TransactionDetailEvent.SetCategory(null))
+            savedStateHandle?.remove<Long>("selected_category_id")
+        } else if (categoryIdResult > 0L && uiState.categories.isNotEmpty()) {
             val cat = uiState.categories.find { it.id == categoryIdResult }
             if (cat != null) {
                 viewModel.onEvent(TransactionDetailEvent.SetCategory(cat))

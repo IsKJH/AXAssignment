@@ -21,7 +21,7 @@ data class TransactionUiState(
 sealed class TransactionEvent {
     data class SetAmount(val value: String) : TransactionEvent()
     data class SetType(val type: TransactionType) : TransactionEvent()
-    data class SetCategory(val category: Category) : TransactionEvent()
+    data class SetCategory(val category: Category?) : TransactionEvent()
     data class SetMemo(val memo: String) : TransactionEvent()
     data class SetDate(val date: LocalDateTime) : TransactionEvent()
     object ToggleRecurring : TransactionEvent()
