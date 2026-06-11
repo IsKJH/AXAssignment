@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -52,9 +53,9 @@ import com.ax.assignment.core.component.MonthSelector
 import com.ax.assignment.core.component.StaggeredAppear
 import com.ax.assignment.core.component.SummaryCard
 import com.ax.assignment.core.component.TransactionItem
+import com.ax.assignment.core.component.periodLabel
 import com.ax.assignment.core.component.rememberEntranceTime
 import com.ax.assignment.core.navigation.Screen
-import com.ax.assignment.core.util.periodRangeLabel
 import com.ax.assignment.core.theme.AXAssignmentTheme
 import com.ax.assignment.core.theme.FabFill
 import com.ax.assignment.core.theme.OnSurface
@@ -101,7 +102,7 @@ fun HomeContent(
     Scaffold(
         topBar = {
             HomeTopBar(
-                periodLabel = buildPeriodLabel(uiState.periodStart, uiState.periodEnd),
+                periodLabel = periodLabel(uiState.periodStart, uiState.periodEnd),
                 onPrev = { onEvent(HomeEvent.PrevMonth) },
                 onNext = { onEvent(HomeEvent.NextMonth) },
             )
@@ -214,7 +215,7 @@ private fun HomeFab(
 
 @Composable
 private fun HomeTopBar(
-    periodLabel: String,
+    periodLabel: AnnotatedString,
     onPrev: () -> Unit,
     onNext: () -> Unit,
 ) {
@@ -336,10 +337,6 @@ private fun DateSectionHeader(date: LocalDate, modifier: Modifier = Modifier) {
         modifier = modifier.padding(start = 16.dp, end = 16.dp, bottom = 4.dp),
     )
 }
-
-/** Latest Figma target: "6월1일 ~ 6월30일" — other years carry a year prefix */
-private fun buildPeriodLabel(start: LocalDate, end: LocalDate): String =
-    periodRangeLabel(start, end)
 
 // ---- Previews ----
 

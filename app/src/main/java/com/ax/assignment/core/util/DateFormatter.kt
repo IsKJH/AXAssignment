@@ -12,18 +12,25 @@ fun LocalDate.toMonthString(): String = format(monthFormatter)
 fun LocalDate.toShortDateString(): String = format(shortFormatter)
 
 /**
- * Period range label, e.g. "6월1일 ~ 6월30일" (Figma 기준 표기).
- * Years other than the current one are prefixed ("2025년 12월1일 ~ …")
- * so past/future periods stay unambiguous.
+ * Period range, split into the Figma day-range text and an optional year tag.
+ *
+ * The day range always keeps the Figma format ("6월1일 ~ 6월30일") regardless of
+ * year, so the layout users see every month never shifts. For periods outside the
+ * current year a year tag is returned separately ("2025", or "2025~2026" when the
+ * period straddles a year end) so the UI can render it as a quiet trailing badge.
+ *
+ * @return base day-range to year tag (null when the period is in the current year)
  */
-fun periodRangeLabel(start: LocalDate, end: LocalDate, today: LocalDate = LocalDate.now()): String {
-    val startStr = buildString {
-        if (start.year != today.year) append("${start.year}년 ")
-        append("${start.monthValue}월${start.dayOfMonth}일")
+fun periodRangeParts(
+    start: LocalDate,
+    end: LocalDate,
+    today: LocalDate = LocalDate.now(),
+): Pair<String, String?> {
+    val base = "${start.monthValue}월${start.dayOfMonth}일 ~ ${end.monthValue}월${end.dayOfMonth}일"
+    val year = when {
+        start.year == today.year && end.year == today.year -> null
+        start.year == end.year -> "${start.year}"
+        else -> "${start.year}~${end.year}"
     }
-    val endStr = buildString {
-        if (end.year != start.year) append("${end.year}년 ")
-        append("${end.monthValue}월${end.dayOfMonth}일")
-    }
-    return "$startStr ~ $endStr"
+    return base to year
 }

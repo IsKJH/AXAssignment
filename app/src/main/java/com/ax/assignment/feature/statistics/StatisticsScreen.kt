@@ -55,6 +55,7 @@ import com.ax.assignment.R
 import com.ax.assignment.core.component.AppTopBar
 import com.ax.assignment.core.component.DonutChart
 import com.ax.assignment.core.component.StaggeredAppear
+import com.ax.assignment.core.component.periodLabel
 import com.ax.assignment.core.component.rememberEntranceTime
 import com.ax.assignment.core.navigation.Screen
 import com.ax.assignment.core.theme.AXAssignmentTheme
@@ -65,7 +66,6 @@ import com.ax.assignment.core.theme.NavigationOn
 import com.ax.assignment.core.theme.Surface
 import com.ax.assignment.core.theme.TextDefault
 import com.ax.assignment.core.theme.TextDescription
-import com.ax.assignment.core.util.periodRangeLabel
 import com.ax.assignment.core.util.periodSwipe
 import com.ax.assignment.core.util.toCurrencyString
 import com.ax.assignment.domain.model.CategorySummary
@@ -145,7 +145,6 @@ private fun PeriodSelectorRow(
     onPrev: () -> Unit,
     onNext: () -> Unit,
 ) {
-    val rangeText = periodRangeLabel(start, end)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -163,7 +162,7 @@ private fun PeriodSelectorRow(
             )
         }
         Text(
-            text = rangeText,
+            text = periodLabel(start, end),
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             color = TextDefault,
