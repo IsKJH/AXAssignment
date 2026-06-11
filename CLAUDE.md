@@ -137,8 +137,9 @@ com.ax.assignment/
 ## 빌드 & 실행
 
 ```bash
-# JAVA_HOME은 전역 env(~/.claude/settings.json)에 설정됨 — export 접두사 금지
-# (export를 붙이면 권한 allowlist에 매칭되지 않아 매번 승인 프롬프트 발생)
+# JAVA_HOME(전역)·MSYS_NO_PATHCONV(프로젝트 local)는 settings env에 설정됨 — export 접두사 금지
+# 변수 간접 호출("$ADB" 등)도 금지: 권한 allowlist는 리터럴 prefix 매칭이라
+# 전체 경로를 그대로 써야 프롬프트 없이 통과한다
 ./gradlew installDebug
 adb shell am start -n com.ax.assignment/.MainActivity
 ```
