@@ -452,11 +452,14 @@ internal fun FloatingDateTimePicker(
                             modifier = Modifier.fillMaxSize(),
                             horizontalArrangement = Arrangement.spacedBy(0.dp),
                         ) {
+                            // Date labels ("10월 14일") are widest, especially at the
+                            // selected 18sp Bold size — give that column extra width so
+                            // the text never wraps; am/pm·hour·minute fit in 2 chars
                             WheelColumn(
                                 items = dateLabels,
                                 selectedIndex = selectedDateIdx,
                                 onSelected = { selectedDateIdx = it },
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.weight(1.6f),
                                 highlightColor = Color.Transparent,
                                 textAlign = Alignment.CenterHorizontally,
                             )
@@ -464,21 +467,21 @@ internal fun FloatingDateTimePicker(
                                 items = amPmLabels,
                                 selectedIndex = selectedAmPm,
                                 onSelected = { selectedAmPm = it },
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.weight(0.8f),
                                 highlightColor = Color.Transparent,
                             )
                             WheelColumn(
                                 items = hourLabels,
                                 selectedIndex = selectedHour,
                                 onSelected = { selectedHour = it },
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.weight(0.8f),
                                 highlightColor = Color.Transparent,
                             )
                             WheelColumn(
                                 items = minuteLabels,
                                 selectedIndex = selectedMinute,
                                 onSelected = { selectedMinute = it },
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.weight(0.8f),
                                 highlightColor = Color.Transparent,
                             )
                         }
@@ -594,6 +597,8 @@ internal fun WheelColumn(
                         color = if (isSel) TextDefault else TextDescription,
                         fontSize = if (isSel) 18.sp else 16.sp,
                         fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
+                        maxLines = 1,
+                        softWrap = false,
                     )
                 }
             }
