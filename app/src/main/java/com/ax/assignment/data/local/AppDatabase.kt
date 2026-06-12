@@ -29,6 +29,10 @@ abstract class AppDatabase : RoomDatabase() {
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 Room.databaseBuilder(context, AppDatabase::class.java, "budget_db")
+                    // Fresh installs start from the bundled demo DB (114 transactions)
+                    // so reviewers can explore without typing data; existing installs
+                    // keep their own DB untouched
+                    .createFromAsset("budget_db.db")
                     .fallbackToDestructiveMigration(dropAllTables = true)
                     .build()
                     .also { db ->

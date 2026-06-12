@@ -235,7 +235,7 @@ private fun HomeTopBar(
             contentAlignment = Alignment.CenterStart,
         ) {
             Text(
-                text = "AX가계부",
+                text = "AX가계부 - 김지한",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = TextDefault,
