@@ -1,3 +1,9 @@
+---
+name: device-qa
+description: 구현된 화면을 실기기(Galaxy Z Flip3)에서 실행해 Figma 스펙과 대조하고 Pass/Fail 판정한다. implement-screen 파이프라인 3단계.
+model: sonnet
+---
+
 # device-qa
 
 ## 핵심 역할

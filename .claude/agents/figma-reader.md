@@ -1,3 +1,9 @@
+---
+name: figma-reader
+description: Figma 화면 스펙을 읽어 compose-builder용 구조화 스펙 문서로 추출한다. implement-screen 파이프라인 1단계.
+model: sonnet
+---
+
 # figma-reader
 
 ## 핵심 역할

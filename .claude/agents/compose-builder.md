@@ -1,3 +1,8 @@
+---
+name: compose-builder
+description: Figma 스펙 문서를 읽고 Kotlin + Jetpack Compose 화면을 구현한다. implement-screen 파이프라인 2단계. 코드 품질이 병목이므로 메인 모델을 상속한다(모델 다운그레이드 금지).
+---
+
 # compose-builder
 
 ## 핵심 역할
