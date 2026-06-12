@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>WeatherNow V2 기능 개선 비교</title>
+<link rel="stylesheet" href="report_common.css?v=20260601">
+</head>
+<body id="top">
+<div class="wrap">
+  <header class="rh">
+    <div class="rh-eyebrow">WeatherNow AI 비교 실험 · V2 / 9단계</div>
+    <h1 class="rh-title">WeatherNow V2 기능 개선 비교</h1>
+    <p class="rh-sub">각 AI가 자신이 만든 V1 코드를 읽고, 시간별 예보·새로고침·즐겨찾기를 추가하도록 동일한 프롬프트를 주었습니다. 처음부터 다시 만드는 게 아니라 <em>기존 코드를 이해하고 확장</em>하는 능력을 측정하는 단계입니다. 4개 AI 모두 6가지 요구사항을 전부 충족했으며, Codex는 V1에서 미해결로 남아 있던 한국어 깨짐 버그를 이 단계에서 명시적 지시 없이 스스로 수정했습니다.</p>
+    <div class="rh-meta">
+      <span class="ai-pill"><span class="dot claude"></span>Claude</span><span class="ai-pill"><span class="dot codex"></span>Codex</span><span class="ai-pill"><span class="dot gemini"></span>Gemini</span><span class="ai-pill"><span class="dot cursor"></span>Cursor</span>
+      <span class="tag-sm">2026-05-29</span>
+    </div>
+    <div class="rh-tldr">
+      <div><div class="rh-tldr-label">이 단계에서 한 것</div><div class="rh-tldr-val">V1 코드 위에 시간별 예보·새로고침·즐겨찾기 4가지 기능 추가</div></div>
+      <div><div class="rh-tldr-label">핵심 차이점</div><div class="rh-tldr-val">Codex가 V1 한국어 버그를 이 단계에서 자가 수정. 4개 AI 모두 요구사항 6/6 충족</div></div>
+      <div><div class="rh-tldr-label">결론</div><div class="rh-tldr-val"><strong>Gemini 149초 최단</strong> — 가장 느린 Claude(361초)보다 2.4배 빠르고, 토큰도 38% 수준(64만 vs 104만)으로 처리했습니다. 기능 완성도는 4개 AI 모두 동일하므로 속도·비용에서 Gemini가 두드러집니다.</div></div>
+    </div>
+  </header>
+  <nav class="toc">
+    <a href="index.html">← 전체 요약</a><a href="#overview">개요</a><a href="#prompt">프롬프트</a><a href="#summary">종합 비교</a><a href="#tokens">토큰</a><a href="#screens">스크린샷</a><a href="#observations">관찰</a><a href="#code">코드</a>
+  </nav>
+  <section class="card" id="overview">
+    <div class="sh"><span class="sh-num">01</span><h2>실험 개요</h2></div>
+    <p class="lead">각 AI에게 자신이 V1에서 작성한 코드를 넘겨주고, 동일한 V2 프롬프트로 기능을 추가하도록 했습니다. "V1을 얼마나 잘 읽고 이어서 쓸 수 있는가"를 측정한 단계입니다.</p>
+    <div class="callout-grid"><div class="callout"><div class="callout-k">비교 초점</div><div class="callout-v">V1 코드를 처음부터 다시 쓰지 않고 <em>기존 구조를 보존한 채</em> 새 기능을 추가했는지가 핵심입니다. 변경 파일 수와 diff 규모가 클수록 불필요한 재작성이 많았다는 신호입니다.</div></div><div class="callout"><div class="callout-k">핵심 관찰 포인트</div><div class="callout-v">요구사항 6가지(시간별 예보, 상세 날씨, 새로고침, 즐겨찾기, 한국어 복구, 빌드 성공) 충족 여부를 먼저 확인하고, 그 다음 "얼마나 적은 코드 변경으로 달성했는가"를 비교합니다.</div></div><div class="callout"><div class="callout-k">한계</div><div class="callout-v">네 앱 모두 동일하게 6/6을 충족했기 때문에 기능 완성도로는 차이가 없습니다. 진짜 차이는 코드 구조와 UI 설계 방식에 있으며, 이는 스크린샷보다 diff와 관찰 섹션에서 드러납니다.</div></div></div>
+    <div class="metric-grid"><div class="metric"><div class="metric-k">가장 빠른 실행</div><div class="metric-v">Gemini · 149.4초 (약 2.5분)</div></div><div class="metric"><div class="metric-k">최저 토큰 사용</div><div class="metric-v">Gemini · 642,641 (Claude의 62% 수준)</div></div><div class="metric"><div class="metric-k">최대 코드량</div><div class="metric-v">Cursor · 748줄 (파일도 9개로 최다 분리)</div></div></div>
+  </section>
+  <section class="card" id="prompt">
+    <div class="sh"><span class="sh-num">02</span><h2>실험 프롬프트</h2></div>
+    <p class="prompt-meta">AI에게 전달한 프롬프트 (영문)</p>
+    <pre class="prompt-pre">You are improving the existing WeatherNow Android app in this directory.
+
+Do not recreate the project from scratch.
+Read the existing code first, then improve it in place.
+
+Experiment context:
+This project is part of an AI comparison experiment. Claude, Codex, and Gemini each created a v1 Android weather app from the same original prompt. Now each AI must improve its own existing v1 project using this same v2 prompt. The goal is to compare how well each AI understands, preserves, and extends an existing codebase.
+
+Goal:
+Turn the current simple mock weather app into a more useful, production-like weather dashboard while keeping it lightweight and mock-data only.
+
+Fixed constraints:
+- Keep Kotlin.
+- Keep Jetpack Compose (안드로이드 UI 프레임워크).
+- Keep MVVM (화면·로직 분리 아키텍처 패턴) with ViewModel (화면 로직을 담당하는 클래스) + UiState (화면에 표시할 데이터를 담는 상태 객체).
+- Keep package name: com.example.weathernow.
+- Do not add external libraries.
+- Do not use a real weather API.
+- Use mock data (테스트용 가짜 데이터) only.
+- Keep a single Activity.
+- Ensure ./gradlew assembleDebug (안드로이드 앱 빌드 명령어) succeeds.
+
+Required improvements:
+1. Fix any broken Korean text or garbled strings in the app.
+2. Preserve all v1 features:
+   - city switching for Seoul, Busan, Jeju
+   - current temperature
+   - weather condition
+   - feels-like temperature
+   - humidity
+   - wind speed
+   - 5-day forecast
+3. Add hourly forecast using mock data:
+   - at least 6 hourly items
+   - time, condition icon, temperature
+4. Add extra weather details:
+   - precipitation probability
+   - UV index
+   - air quality
+5. Add a refresh action:
+   - show last updated time
+   - simulate refresh using mock data
+   - show a brief loading state
+6. Add favorite city behavior:
+   - user can mark one city as favorite
+   - favorite state is kept in ViewModel state
+   - no persistence required
+7. Improve UI/UX:
+   - clearer visual hierarchy
+   - better spacing
+   - readable Korean labels
+   - one consistent light or dark theme
+   - no overlapping text
+   - still usable on a small Android screen
+8. Keep code maintainable:
+   - avoid one huge composable if possible
+   - create reusable composables where appropriate
+   - avoid unnecessary rewrites
+
+Important implementation guidance:
+- Start by inspecting the existing files in this directory.
+- Preserve the current project structure unless there is a clear reason to adjust it.
+- Prefer small, safe, maintainable changes over a full rewrite.
+- If the current project has garbled Korean due to encoding issues, replace it with proper Korean strings:
+  - Seoul: 서울
+  - Busan: 부산
+  - Jeju: 제주
+  - Sunny: 맑음
+  - Cloudy: 구름많음
+  - Rain: 비
+  - Feels like: 체감온도
+  - Humidity: 습도
+  - Wind: 풍속
+  - 5-day forecast: 5일 예보
+  - Hourly forecast: 시간별 예보
+  - Precipitation: 강수확률
+  - UV index: 자외선 지수
+  - Air quality: 대기질
+  - Last updated: 마지막 업데이트
+  - Favorite: 즐겨찾기
+- Use emoji or Compose-drawn icons only. Do not add external image resources.
+
+After implementation:
+- Run ./gradlew assembleDebug (안드로이드 앱 빌드 명령어).
+- Briefly summarize what changed.
+- Mention whether the build passed.</pre>
+  </section>
+  <section class="card" id="summary">
+    <div class="sh"><span class="sh-num">03</span><h2>종합 비교</h2></div>
+    <p class="lead">4개 AI 모두 기능 요구사항(6/6)과 빌드 성공을 달성했습니다. 차이는 <strong>속도</strong>(149초~361초), <strong>토큰 소비량</strong>(64만~161만), <strong>코드 구조</strong>(파일 5~9개, 518~748줄)에서 나타납니다. Codex는 토큰과 시간을 가장 많이 썼고, Gemini는 가장 적게 썼습니다.</p>
+    <div class="tbl-wrap"><table><thead><tr><th>항목</th><th class="th-claude">Claude</th><th class="th-codex">Codex</th><th class="th-gemini">Gemini</th><th class="th-cursor">Cursor</th></tr></thead><tbody><tr><td class="col-label">모델</td><td>claude-sonnet-4-6 (Claude Code CLI v2.1.153)</td><td>gpt-5.5 (OpenAI Codex CLI v0.134.0)</td><td>gemini-3.1-flash-lite + gemini-3-flash (Gemini CLI v0.43.0)</td><td>auto (Cursor Agent)</td></tr><tr><td class="col-label">소요 시간</td><td>360.6초</td><td>315초</td><td>149.4초</td><td>240초</td></tr><tr class="row-hl"><td class="col-label">총 사용 토큰</td><td>1,043,992</td><td>1,615,940</td><td>642,641</td><td>1,228,000</td></tr><tr><td class="col-label">Kotlin 파일/라인</td><td>5개 / 580줄</td><td>6개 / 736줄</td><td>5개 / 518줄</td><td>9개 / 748줄</td></tr><tr class="row-hl"><td class="col-label">빌드</td><td>성공</td><td>성공</td><td>성공</td><td>성공</td></tr><tr><td class="col-label">요구사항 충족</td><td>6/6</td><td>6/6</td><td>6/6</td><td>6/6</td></tr><tr><td class="col-label">V1 대비 변경 파일</td><td>3개</td><td>6개</td><td>4개</td><td>8개</td></tr><tr><td class="col-label">UI 테마</td><td>밝은 블루 그라디언트, V1 감성 유지</td><td>다크 네이비 대시보드</td><td>블루 그라디언트, 모바일 앱 액션 중심</td><td>라이트 청록(teal) 그라디언트, V1 감성 유지</td></tr></tbody></table></div>
+  </section>
+
+  <section class="card" id="tokens">
+    <div class="sh"><span class="sh-num">04</span><h2>토큰 사용량</h2></div>
+    <p class="lead">토큰(token)은 AI가 처리한 텍스트 단위입니다. 코드·대화·파일 내용을 모두 포함하며, 많을수록 비용이 높아집니다. Claude는 캐시(cache) 덕분에 입력 토큰 94%를 재사용해 실제 과금 비용이 낮았습니다. Codex는 총량이 가장 많았고(161만), Gemini는 가장 적었습니다(64만).</p>
+    <div class="token-cards"><div class="token-card"><div class="tc-head"><span class="dot claude"></span><span class="tc-name">Claude</span><span class="tc-model">claude-sonnet-4-6 (Claude Code CLI v2.1.153)</span></div><div class="kv-list"><div class="kv-row hl"><span class="kv-k">총 사용 토큰</span><span class="kv-v">1,043,992</span></div><div class="kv-row"><span class="kv-k">신규 입력 토큰</span><span class="kv-v">24</span></div><div class="kv-row"><span class="kv-k">캐시 생성 토큰</span><span class="kv-v">39,214</span></div><div class="kv-row"><span class="kv-k">캐시 재사용 토큰</span><span class="kv-v">979,789</span></div><div class="kv-row"><span class="kv-k">출력 토큰</span><span class="kv-v">24,965</span></div><div class="kv-row"><span class="kv-k">보조 모델 토큰</span><span class="kv-v">1,303</span></div><div class="kv-row"><span class="kv-k">예상 비용</span><span class="kv-v">$0.8169</span></div></div><p class="tc-note">총 입력 토큰의 94%(979,789개)가 캐시에서 재사용되었습니다. 캐시 재사용 토큰은 신규 입력보다 과금이 훨씬 낮아, 실제 비용($0.82)이 토큰 총량에 비해 낮게 나왔습니다. 보조 모델(claude-haiku 계열)은 1,303개를 별도로 사용했습니다.</p></div><div class="token-card"><div class="tc-head"><span class="dot codex"></span><span class="tc-name">Codex</span><span class="tc-model">gpt-5.5 (OpenAI Codex CLI v0.134.0)</span></div><div class="kv-list"><div class="kv-row hl"><span class="kv-k">총 사용 토큰</span><span class="kv-v">1,615,940</span></div><div class="kv-row"><span class="kv-k">입력 토큰</span><span class="kv-v">1,604,558</span></div><div class="kv-row"><span class="kv-k">캐시 입력 토큰</span><span class="kv-v">1,406,720</span></div><div class="kv-row"><span class="kv-k">출력 토큰</span><span class="kv-v">11,382</span></div><div class="kv-row"><span class="kv-k">추론 출력 토큰</span><span class="kv-v">1,063</span></div></div><p class="tc-note">4개 AI 중 총 토큰이 가장 많습니다(161만). 입력 토큰 160만 중 캐시 적중분이 140만으로, 실질적으로 새롭게 처리한 입력은 약 20만 토큰입니다. 출력(생성) 토큰은 11,382개로 상대적으로 적어, 파일 읽기를 반복한 탓에 입력이 크게 부풀어 있습니다.</p></div><div class="token-card"><div class="tc-head"><span class="dot gemini"></span><span class="tc-name">Gemini</span><span class="tc-model">gemini-3.1-flash-lite + gemini-3-flash (Gemini CLI v0.43.0)</span></div><div class="kv-list"><div class="kv-row hl"><span class="kv-k">총 사용 토큰</span><span class="kv-v">642,641</span></div><div class="kv-row"><span class="kv-k">gemini-3.1-flash-lite 사용 토큰</span><span class="kv-v">4,419</span></div><div class="kv-row"><span class="kv-k">gemini-3-flash-preview 사용 토큰</span><span class="kv-v">638,222</span></div></div><p class="tc-note">4개 AI 중 가장 적은 토큰을 사용했습니다(64만). 보조 모델(gemini-3.1-flash-lite)이 라우팅·요약에 4,419개를 소모했고, 본 작업 모델(gemini-3-flash)이 나머지 63만 8천 개를 처리했습니다. Claude(104만), Codex(161만) 대비 절반 이하입니다.</p></div><div class="token-card"><div class="tc-head"><span class="dot cursor"></span><span class="tc-name">Cursor</span><span class="tc-model">auto (Cursor Agent)</span></div><div class="kv-list"><div class="kv-row hl"><span class="kv-k">총 사용 토큰</span><span class="kv-v">1,228,000</span></div><div class="kv-row"><span class="kv-k">예상 비용</span><span class="kv-v">$0.38 (Included)</span></div></div><p class="tc-note">Cursor는 입·출력 토큰을 분리 제공하지 않아 총계(122.8만)만 파악됩니다. $0.38은 Included 요금제 한도 내 소모분으로 추가 청구는 없었습니다. 18:26 시점의 Usage 스냅샷 기준이므로 이후 변동이 있을 수 있습니다.</p></div></div>
+  </section>
+  <section class="card" id="screens">
+    <div class="sh"><span class="sh-num">05</span><h2>실행 화면</h2></div>
+    <p class="lead">각 앱을 실제 기기에 설치한 뒤 상단, 중간, 하단 스크롤 위치를 동일한 방식으로 캡처했습니다.</p>
+    <div class="screen-set"><div class="screen-ai"><div class="screen-ai-head"><span class="dot claude"></span>Claude</div><div class="screen-list"><div class="screen-shot"><div class="screen-shot-title">상단 현재 날씨</div><img src="../screenshots/v2/claude/01-top.png" alt="Claude 상단 현재 날씨"></div><div class="screen-shot"><div class="screen-shot-title">중간 · 하단 (동일)</div><img src="../screenshots/v2/claude/02-middle.png" alt="Claude 중간 기능 영역"></div></div></div><div class="screen-ai"><div class="screen-ai-head"><span class="dot codex"></span>Codex</div><div class="screen-list"><div class="screen-shot"><div class="screen-shot-title">상단 현재 날씨</div><img src="../screenshots/v2/codex/01-top.png" alt="Codex 상단 현재 날씨"></div><div class="screen-shot"><div class="screen-shot-title">중간 기능 영역</div><img src="../screenshots/v2/codex/02-middle.png" alt="Codex 중간 기능 영역"></div><div class="screen-shot"><div class="screen-shot-title">하단 예보/상세</div><img src="../screenshots/v2/codex/03-bottom.png" alt="Codex 하단 예보/상세"></div></div></div><div class="screen-ai"><div class="screen-ai-head"><span class="dot gemini"></span>Gemini</div><div class="screen-list"><div class="screen-shot"><div class="screen-shot-title">상단 현재 날씨</div><img src="../screenshots/v2/gemini/01-top.png" alt="Gemini 상단 현재 날씨"></div><div class="screen-shot"><div class="screen-shot-title">중간 기능 영역</div><img src="../screenshots/v2/gemini/02-middle.png" alt="Gemini 중간 기능 영역"></div><div class="screen-shot"><div class="screen-shot-title">하단 예보/상세</div><img src="../screenshots/v2/gemini/03-bottom.png" alt="Gemini 하단 예보/상세"></div></div></div><div class="screen-ai"><div class="screen-ai-head"><span class="dot cursor"></span>Cursor</div><div class="screen-list"><div class="screen-shot"><div class="screen-shot-title">상단 현재 날씨</div><img src="../screenshots/v2/cursor/01-top.png" alt="Cursor 상단 현재 날씨"></div><div class="screen-shot"><div class="screen-shot-title">중간 기능 영역</div><img src="../screenshots/v2/cursor/02-middle.png" alt="Cursor 중간 기능 영역"></div><div class="screen-shot"><div class="screen-shot-title">하단 예보/상세</div><img src="../screenshots/v2/cursor/03-bottom.png" alt="Cursor 하단 예보/상세"></div></div></div></div>
+  </section>
+  <section class="card" id="observations">
+    <div class="sh"><span class="sh-num">06</span><h2>구현 관찰</h2></div>
+    <p class="lead">4개 AI 모두 요구사항을 충족했지만, <em>어떻게</em> 구현했는지는 각기 다릅니다. V1 코드 보존 정도, UI 재설계 범위, 컴포넌트 분리 방식에서 뚜렷한 차이가 있습니다.</p>
+    <div class="tbl-wrap"><table><thead><tr><th>AI</th><th>UI 테마</th><th>주요 기능</th><th>구체적 관찰</th></tr></thead><tbody><tr><td class="col-label"><span class="dot claude"></span> Claude</td><td>밝은 블루 그라디언트, V1 감성 유지</td><td>시간별 예보, 상세 날씨 카드, 새로고침/마지막 업데이트, 즐겨찾기</td><td>4개 AI 중 V1의 시각 정체성을 가장 많이 보존했습니다. 변경 파일 3개(최소)로 필요한 기능만 추가했습니다. 단, 하단 시간별 예보 목록이 Android 내비게이션 바에 가려지는 레이아웃 문제가 있습니다.</td></tr><tr><td class="col-label"><span class="dot codex"></span> Codex</td><td>다크 네이비 대시보드</td><td>시간별 예보, 상세 날씨, 새로고침, 즐겨찾기</td><td>V1 라이트 테마에서 다크 네이비로 UI를 전면 재설계했습니다. 덕분에 컴포넌트 분리(ForecastRow, MetricTile 등)가 4개 중 가장 명확하지만, V1 스타일 보존 의도와는 거리가 있습니다. V1에서 깨져 있던 한국어 문자열을 이 단계에서 별도 지시 없이 스스로 수정한 유일한 AI입니다.</td></tr><tr><td class="col-label"><span class="dot gemini"></span> Gemini</td><td>블루 그라디언트, 모바일 앱 액션 중심</td><td>시간별 예보, 상세 날씨 카드, 새로고침 아이콘, 즐겨찾기 하트</td><td>새로고침·즐겨찾기 버튼을 상단 AppBar에 배치해, 스크롤 없이 바로 접근할 수 있습니다. Claude·Cursor가 하단에 배치한 것과 대조됩니다. 하단 시간별 예보가 내비게이션 바에 겹치는 문제는 Claude와 동일하게 발생합니다.</td></tr><tr><td class="col-label"><span class="dot cursor"></span> Cursor</td><td>라이트 청록(teal) 그라디언트, V1 감성 유지</td><td>시간별 예보(HourlyCard), 상세 날씨, 새로고침, 즐겨찾기, 도시 탭(CityTabBar)</td><td>V1 스타일을 유지하면서 새 기능을 독립 컴포넌트(CityTabBar, HourlyCard, WeatherHeader)로 분리했습니다. 다른 AI들이 기존 파일을 확장한 것과 달리, Cursor는 파일을 8개나 변경·신규 추가해 구조를 가장 많이 바꿨습니다. IDE 에이전트(Agent 모드) 방식으로 실행해 증분 빌드 시간은 8.2초였습니다.</td></tr></tbody></table></div>
+  </section>
+  <section class="card" id="code">
+    <div class="sh"><span class="sh-num">07</span><h2>코드 요약</h2></div>
+    <p class="lead">Gemini가 518줄로 가장 간결하고, Cursor가 748줄로 가장 많습니다. 줄 수 자체보다 <strong>변경 파일 수</strong>가 더 의미 있는 지표입니다. 변경 파일이 적을수록 기존 구조를 적게 건드렸다는 뜻입니다. Claude 3개 → Gemini 4개 → Codex 6개 → Cursor 8개 순으로 변경 범위가 넓어집니다.</p>
+    <div class="tbl-wrap"><table><thead><tr><th>AI</th><th>Kotlin 파일 수</th><th>총 Kotlin 라인</th><th>V1 대비 변경 파일 수</th></tr></thead><tbody><tr><td class="col-label"><span class="dot claude"></span> Claude</td><td>5개</td><td>580줄</td><td>3개 (최소 변경)</td></tr><tr><td class="col-label"><span class="dot codex"></span> Codex</td><td>6개</td><td>736줄</td><td>6개 (전 파일 수정)</td></tr><tr><td class="col-label"><span class="dot gemini"></span> Gemini</td><td>5개</td><td>518줄 (최소 코드)</td><td>4개</td></tr><tr><td class="col-label"><span class="dot cursor"></span> Cursor</td><td>9개</td><td>748줄 (최대 코드)</td><td>8개 (신규 파일 3개 포함)</td></tr></tbody></table></div><div class="code-card"><div class="cc-head"><span class="dot claude"></span><span class="cc-name">Claude diff</span></div><pre class="diff">.../com/example/weathernow/data/WeatherData.kt     |  48 +++-
+ .../com/example/weathernow/ui/WeatherScreen.kt     | 263 +++++++++++++++------
+ .../weathernow/viewmodel/WeatherViewModel.kt       |  40 +++-
+ 3 files changed, 268 insertions(+), 83 deletions(-)</pre><p class="tc-note">WeatherData·ViewModel에 새 데이터 구조를 추가하고, WeatherScreen 한 파일에 UI 변경을 집중했습니다. 변경 파일 3개는 4개 AI 중 가장 적습니다.</p></div><div class="code-card"><div class="cc-head"><span class="dot codex"></span><span class="cc-name">Codex diff</span></div><pre class="diff">.../java/com/example/weathernow/MainActivity.kt    |   4 +-
+ .../java/com/example/weathernow/WeatherData.kt     |  91 ++++--
+ .../com/example/weathernow/WeatherViewModel.kt     |  58 +++-
+ .../com/example/weathernow/ui/WeatherScreen.kt     | 328 ++++++++++++++++-----
+ .../weathernow/ui/components/ForecastRow.kt        |  10 +-
+ .../example/weathernow/ui/components/MetricTile.kt |   6 +-
+ 6 files changed, 391 insertions(+), 106 deletions(-)</pre><p class="tc-note">WeatherScreen에만 추가 삽입(+328줄)이 집중되었고, WeatherData에서도 +91줄이 늘었습니다. V1부터 있던 ForecastRow·MetricTile 컴포넌트도 한국어 수정을 위해 함께 변경되었습니다.</p></div><div class="code-card"><div class="cc-head"><span class="dot gemini"></span><span class="cc-name">Gemini diff</span></div><pre class="diff">.../java/com/example/weathernow/WeatherData.kt     |  45 ++++-
+ .../com/example/weathernow/WeatherViewModel.kt     |  49 +++++-
+ .../com/example/weathernow/ui/WeatherScreen.kt     | 185 ++++++++++++++-------
+ .../weathernow/ui/components/WeatherComponents.kt  |  93 ++++++++---
+ 4 files changed, 293 insertions(+), 79 deletions(-)</pre><p class="tc-note">삽입량이 293줄로 4개 AI 중 가장 적습니다. WeatherScreen 변경폭도 +185줄로 Claude(263) · Codex(328) · Cursor(275+신규 3파일)보다 작아, 가장 간결하게 기능을 추가했습니다.</p></div><div class="code-card"><div class="cc-head"><span class="dot cursor"></span><span class="cc-name">Cursor diff</span></div><pre class="diff">app/build.gradle.kts                                               |  수정
+ .../java/com/example/weathernow/MainActivity.kt                    |  수정
+ .../java/com/example/weathernow/WeatherData.kt                     |  수정
+ .../java/com/example/weathernow/WeatherViewModel.kt                |  수정
+ .../java/com/example/weathernow/ui/WeatherScreen.kt                |  수정
+ .../java/com/example/weathernow/ui/components/CityTabBar.kt        |  신규
+ .../java/com/example/weathernow/ui/components/HourlyCard.kt        |  신규
+ .../java/com/example/weathernow/ui/components/WeatherHeader.kt     |  신규
+ 8 files changed, V1(7파일·473줄) → V2(9파일·748줄), +275줄</pre><p class="tc-note">기존 파일 5개를 수정하고 컴포넌트 파일 3개를 신규 추가했습니다. 단일 파일에 기능을 쌓는 대신 역할별로 파일을 나누는 방식입니다. 변경 범위는 가장 넓지만, 각 파일의 책임이 명확해집니다.</p></div>
+  </section>
+  <nav class="rf">
+    <a href="report.html">← V1 초기 생성</a>
+    <a href="report_v3.html">V3 자율 혁신 →</a>
+  </nav>
+</div>
+</body>
+</html>

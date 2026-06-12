@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>WeatherNow V9 상호 코드 리뷰</title>
+<link rel="stylesheet" href="report_common.css?v=20260601">
+</head>
+<body id="top">
+<div class="wrap">
+
+  <header class="rh">
+    <h1 class="rh-title">V9 — 상호 코드 리뷰</h1>
+    <p class="rh-sub">각 AI가 다른 두 AI의 V8 최종 코드를 직접 읽고 평가했습니다. 각자 다른 강점을 가진 세 AI가 서로의 코드에서 배울 점을 정확히 찾아냈습니다. 이 단계의 결과는 <strong>개선 계획 도출</strong>까지입니다 — 실제 코드 변경은 이번 실험의 범위 밖이며, 어떤 패턴을 문제로 인식했는지 자체가 이 실험의 데이터입니다.</p>
+    <div class="rh-meta">
+      <span class="ai-pill"><span class="dot claude"></span>Claude</span>
+      <span class="ai-pill"><span class="dot codex"></span>Codex</span>
+      <span class="ai-pill"><span class="dot gemini"></span>Gemini</span>
+      <span class="tag-sm">V8 완료 코드 기반</span>
+      <span class="tag-sm">2026-06-04</span>
+    </div>
+    <div class="rh-tldr">
+      <div><div class="rh-tldr-label">이 단계에서 한 것</div><div class="rh-tldr-val">각 AI가 다른 두 AI의 코드를 직접 읽고 품질 평가 + 자가 개선 계획 총 14개 도출</div></div>
+      <div><div class="rh-tldr-label">핵심 차이점</div><div class="rh-tldr-val">Codex <code>FakeOpenMeteoServer</code>(실제 네트워크 없이 HTTP 응답을 흉내내는 테스트용 가짜 서버)가 전원 최고 평가. Claude <code>fetchJob?.cancel()</code>, Gemini <code>generateInsight()</code>를 서로가 강점으로 인정</div></div>
+      <div><div class="rh-tldr-label">결론</div><div class="rh-tldr-val"><strong>서로의 강점을 정확히 인식</strong> &middot; Codex 671초 최단 &middot; 개선 계획 14개 도출 (코드 변경은 이번 실험 범위 밖)</div></div>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <a href="index.html">← 전체 요약</a>
+    <a href="#overview">개요</a>
+    <a href="#review">AI별 리뷰</a>
+    <a href="#cross">교차 평가</a>
+    <a href="#improve">자가 개선 계획</a>
+    <a href="#tokens">토큰 · 시간</a>
+    <a href="#verdict">최종 평가</a>
+  </nav>
+
+  <!-- 01 실험 개요 -->
+  <section class="card" id="overview">
+    <div class="sh"><span class="sh-num">01</span><h2>실험 개요</h2></div>
+    <div class="metric-grid">
+      <div class="metric">
+        <div class="metric-k">리뷰 매트릭스</div>
+        <div class="metric-v">3×2 = 6쌍</div>
+      </div>
+      <div class="metric">
+        <div class="metric-k">자가 개선 항목</div>
+        <div class="metric-v">총 14개</div>
+      </div>
+      <div class="metric">
+        <div class="metric-k">3개 AI 공통 지적</div>
+        <div class="metric-v">2개 패턴</div>
+      </div>
+      <div class="metric">
+        <div class="metric-k">가장 빠른 리뷰</div>
+        <div class="metric-v">Codex 671초</div>
+      </div>
+    </div>
+
+    <div class="callout-grid" style="margin-top:16px">
+      <div class="callout">
+        <div class="callout-k">실험 설계</div>
+        <div class="callout-v">Claude는 Codex·Gemini를, Codex는 Claude·Gemini를, Gemini는 Claude·Codex를 리뷰했습니다. 각 AI는 실제 파일을 직접 읽고 아키텍처·코루틴·Worker·테스트·DB 5개 차원으로 평가한 뒤, 다른 코드에서 배운 것을 자기 코드 개선 계획으로 전환했습니다.</div>
+      </div>
+      <div class="callout">
+        <div class="callout-k">핵심 질문</div>
+        <div class="callout-v">AI는 자기 코드의 부족한 점을 남의 코드에서 발견할 수 있는가? 발견했다면 그것을 "다음 버전에서 이렇게 바꾸겠다"는 구체적인 계획으로 전환할 수 있는가? V9는 코드를 새로 짜는 능력이 아니라 <strong>남의 코드를 이해하고, 비판하고, 자기 것으로 흡수하는</strong> 능력을 측정합니다.</div>
+      </div>
+      <div class="callout">
+        <div class="callout-k">특이사항</div>
+        <div class="callout-v">Gemini CLI는 초기 실행 시 워크스페이스 밖 파일 접근이 제한됐지만, 리포 루트에서 재실행 후 Claude·Codex 코드 파일을 직접 읽고 리뷰를 작성했습니다. <code>FavoriteCityRepository</code>, <code>fetchJob?.cancel()</code>, <code>FakeOpenMeteoServer</code> 등 실제 코드를 참조한 구체적인 리뷰가 완성됐습니다.</div>
+      </div>
+    </div>
+
+    <!-- 리뷰 매트릭스 -->
+    <h3 style="margin:20px 0 12px;font-size:.95rem;font-weight:700;color:var(--text2)">리뷰 매트릭스</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>리뷰어 ↓ / 대상 →</th>
+            <th><span class="dot claude" style="display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px"></span>Claude</th>
+            <th><span class="dot codex" style="display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px"></span>Codex</th>
+            <th><span class="dot gemini" style="display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px"></span>Gemini</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="font-weight:700"><span class="dot claude" style="display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px"></span>Claude</td>
+            <td style="color:var(--text3);text-align:center">—</td>
+            <td style="text-align:center"><span class="badge ok">✓ 리뷰 완료</span></td>
+            <td style="text-align:center"><span class="badge ok">✓ 리뷰 완료</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:700"><span class="dot codex" style="display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px"></span>Codex</td>
+            <td style="text-align:center"><span class="badge ok">✓ 리뷰 완료</span></td>
+            <td style="color:var(--text3);text-align:center">—</td>
+            <td style="text-align:center"><span class="badge ok">✓ 리뷰 완료</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight:700"><span class="dot gemini" style="display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px"></span>Gemini</td>
+            <td style="text-align:center"><span class="badge ok">✓ 리뷰 완료</span></td>
+            <td style="text-align:center"><span class="badge ok">✓ 리뷰 완료</span></td>
+            <td style="color:var(--text3);text-align:center">—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 02 AI별 리뷰 결과 -->
+  <section class="card" id="review">
+    <div class="sh"><span class="sh-num">02</span><h2>AI별 리뷰 결과 요약</h2></div>
+
+    <!-- Claude가 본 것 -->
+    <h3 style="margin:0 0 10px;font-size:.95rem;font-weight:700;color:var(--text2)">Claude가 Codex · Gemini를 본 시각</h3>
+    <div class="ai-grid" style="grid-template-columns:1fr 1fr;margin-bottom:20px">
+      <div class="ai-card">
+        <div class="ai-card-head codex"><span class="dot codex"></span> Codex (Claude의 평가)</div>
+        <div class="ai-card-body">
+          <div class="ai-stat hl"><span class="ai-stat-k">종합 평가</span><span class="ai-stat-v">설계 철학 일관성 최고</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">최고 강점</span><span class="ai-stat-v">FavoriteCityRepository 인터페이스 (DIP(Dependency Inversion Principle — 추상 인터페이스에 의존해 구현체를 교체 가능하게 하는 설계 원칙) 완전 적용)</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">차별화 포인트</span><span class="ai-stat-v">WeatherUiState computed properties, runCatching 관용구</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">주요 지적</span><span class="ai-stat-v">274줄 ViewModel 모놀리식, Worker 목 데이터</span></div>
+        </div>
+      </div>
+      <div class="ai-card">
+        <div class="ai-card-head gemini"><span class="dot gemini"></span> Gemini (Claude의 평가)</div>
+        <div class="ai-card-body">
+          <div class="ai-stat hl"><span class="ai-stat-k">종합 평가</span><span class="ai-stat-v">속도와 스마트 기능 강점, 후반 품질 일관성 아쉬움</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">최고 강점</span><span class="ai-stat-v">_uiState.update{} 원자적 업데이트(동시 접근 시 상태가 중간에 깨지지 않도록 한 번에 갱신), generateInsight() V3 유지</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">차별화 포인트</span><span class="ai-stat-v">Retrofit 인터페이스/DTO 분리</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">주요 지적</span><span class="ai-stat-v">mapWeatherCode() DRY 위반, FavoriteDatabase.kt 단일 파일 집중, SimpleDateFormat 레거시</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Codex가 본 것 -->
+    <h3 style="margin:0 0 10px;font-size:.95rem;font-weight:700;color:var(--text2)">Codex가 Claude · Gemini를 본 시각</h3>
+    <div class="ai-grid" style="grid-template-columns:1fr 1fr;margin-bottom:20px">
+      <div class="ai-card">
+        <div class="ai-card-head claude"><span class="dot claude"></span> Claude (Codex의 평가)</div>
+        <div class="ai-card-body">
+          <div class="ai-stat hl"><span class="ai-stat-k">종합 평가</span><span class="ai-stat-v">작고 안정적인 구조, 실전적 디테일</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">최고 강점</span><span class="ai-stat-v">fetchJob?.cancel() 경쟁 상태 방지, Worker 실 API 사용</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">차별화 포인트</span><span class="ai-stat-v">날씨+AQI 병렬 async 호출, fallback 처리</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">주요 지적</span><span class="ai-stat-v">WeatherRepository object 싱글톤 → 주입 어려움, selectCity 인덱스 범위 검사 없음</span></div>
+        </div>
+      </div>
+      <div class="ai-card">
+        <div class="ai-card-head gemini"><span class="dot gemini"></span> Gemini (Codex의 평가)</div>
+        <div class="ai-card-body">
+          <div class="ai-stat hl"><span class="ai-stat-k">종합 평가</span><span class="ai-stat-v">도구 선택 현대적, 사용자 해석 데이터 제공</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">최고 강점</span><span class="ai-stat-v">Retrofit DTO API 계약 명확, generateInsight() 정보 해석, Turbine 상태 흐름 검증</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">차별화 포인트</span><span class="ai-stat-v">StateFlow 중간 상태 검증</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">주요 지적</span><span class="ai-stat-v">WeatherApiService.create() 미주입, mapWeatherCode() 중복, fetchJob 없어 race condition 위험</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gemini가 본 것 -->
+    <h3 style="margin:0 0 10px;font-size:.95rem;font-weight:700;color:var(--text2)">Gemini가 Claude · Codex를 본 시각</h3>
+    <div class="ai-grid" style="grid-template-columns:1fr 1fr">
+      <div class="ai-card">
+        <div class="ai-card-head claude"><span class="dot claude"></span> Claude (Gemini의 평가)</div>
+        <div class="ai-card-body">
+          <div class="ai-stat hl"><span class="ai-stat-k">종합 평가</span><span class="ai-stat-v">아키텍처와 코루틴 제어의 정석</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">최고 강점</span><span class="ai-stat-v">Repository 계층 분리, fetchJob?.cancel(), advanceUntilIdle() 테스트 기법</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">차별화 포인트</span><span class="ai-stat-v">날씨·AQI 병렬 fetch, 도메인 모델 명확</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">주요 지적</span><span class="ai-stat-v">JSONObject 직접 파싱 (Retrofit 권장), DAO(Data Access Object — DB 쿼리를 담당하는 인터페이스) 직접 주입 (Repository 패턴 권장), Worker 알림 채널·권한 확인 없음</span></div>
+        </div>
+      </div>
+      <div class="ai-card">
+        <div class="ai-card-head codex"><span class="dot codex"></span> Codex (Gemini의 평가)</div>
+        <div class="ai-card-body">
+          <div class="ai-stat hl"><span class="ai-stat-k">종합 평가</span><span class="ai-stat-v">테스트 자동화 수준 가장 높음</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">최고 강점</span><span class="ai-stat-v">FakeOpenMeteoServer(URLStreamHandlerFactory — JVM 수준에서 HTTP 요청을 가로채는 기법으로 구현한 테스트용 가짜 서버), Repository 인터페이스 패턴, POST_NOTIFICATIONS 이중 권한 체크</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">차별화 포인트</span><span class="ai-stat-v">알림 권한 안전성, 병렬 도시 데이터 fetch</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">주요 지적</span><span class="ai-stat-v">mutableStateOf vs StateFlow 일관성, Worker 목 데이터, OpenMeteoWeatherRepository 비주입</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 교차 평가 -->
+  <section class="card" id="cross">
+    <div class="sh"><span class="sh-num">03</span><h2>교차 평가 — 3개 AI가 동의한 것, 다르게 본 것</h2></div>
+
+    <h3 style="margin:0 0 12px;font-size:.95rem;font-weight:700;color:var(--text2)">3개 AI 모두 동의한 관찰</h3>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+      <div class="insight">
+        <span class="insight-icon">🏆</span>
+        <div><strong>Codex의 FakeOpenMeteoServer 테스트 전략 — 가장 높은 평가 수렴:</strong> FakeOpenMeteoServer는 실제 네트워크 요청 없이도 HTTP 통신을 흉내내는 테스트용 가짜 서버입니다. Claude는 이를 "가장 낮은 레이어에서 네트워크를 가로채 실제 스택에 가깝게 테스트하는 방식"으로, Gemini는 "네트워크 레이어의 결함을 조기에 발견할 수 있는 강력한 도구"로 평가했습니다. Codex 자신도 "다른 AI의 코드에서 1순위로 배우고 싶은 항목"으로 꼽았습니다. 3개 AI가 동일하게 Codex V5 테스트 전략을 최고 수준으로 평가한 유일한 항목입니다.</div>
+      </div>
+      <div class="insight">
+        <span class="insight-icon">⚠️</span>
+        <div><strong>Codex Worker 목 데이터 — 공통 비판:</strong> Claude는 "V4부터 실 API를 사용했음에도 V8에서 퇴보한 결정", Gemini는 "실용성 측면 아쉬움", Codex 자신도 "3순위 자가 개선 항목으로 실 API 전환"을 계획. 서로 다른 관점으로 접근했지만 결론이 일치.</div>
+      </div>
+      <div class="insight">
+        <span class="insight-icon">✨</span>
+        <div><strong>Gemini의 generateInsight() — 창의적 기능 인정:</strong> generateInsight()는 날씨 데이터를 받아 "기온이 낮고 습도가 높으니 우산을 챙기세요"처럼 사람이 바로 이해할 수 있는 자연어 해석 문구를 생성하는 함수입니다. Claude는 이를 "V3에서 도입해 V8까지 유일하게 유지된 스마트 기능"이라 평가했고, Codex는 "날씨 수치를 해석된 형태로 제공한다는 점이 경쟁 코드보다 우수"라고 인정했습니다. 두 AI 모두 Gemini가 V3 이후 이 기능을 꾸준히 유지한 것을 강점으로 봤습니다.</div>
+      </div>
+    </div>
+
+    <h3 style="margin:0 0 12px;font-size:.95rem;font-weight:700;color:var(--text2)">서로에게서 배운 것 — 흥미로운 패턴</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>배우는 AI</th>
+            <th>가르치는 AI</th>
+            <th>배운 내용</th>
+            <th>자가 개선 전환 여부</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="dot claude" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px"></span>Claude</td>
+            <td><span class="dot codex" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px"></span>Codex</td>
+            <td>FavoriteCityRepository 인터페이스 (DIP)</td>
+            <td><span class="badge ok">1순위 개선 계획</span></td>
+          </tr>
+          <tr>
+            <td><span class="dot claude" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px"></span>Claude</td>
+            <td><span class="dot gemini" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px"></span>Gemini</td>
+            <td>_uiState.update{} 원자적 업데이트</td>
+            <td><span class="badge ok">2순위 개선 계획</span></td>
+          </tr>
+          <tr>
+            <td><span class="dot codex" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px"></span>Codex</td>
+            <td><span class="dot claude" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px"></span>Claude</td>
+            <td>fetchJob?.cancel() 경쟁 상태 방지</td>
+            <td><span class="badge ok">2순위 개선 계획</span></td>
+          </tr>
+          <tr>
+            <td><span class="dot codex" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px"></span>Codex</td>
+            <td><span class="dot gemini" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px"></span>Gemini</td>
+            <td>Retrofit DTO 구조적 선명성, Turbine StateFlow 검증</td>
+            <td><span class="badge ok">1·5순위 개선 계획</span></td>
+          </tr>
+          <tr>
+            <td><span class="dot gemini" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px"></span>Gemini</td>
+            <td><span class="dot claude" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px"></span>Claude</td>
+            <td>Repository 패턴, fetchJob?.cancel()</td>
+            <td><span class="badge ok">1·2순위 개선 계획</span></td>
+          </tr>
+          <tr>
+            <td><span class="dot gemini" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px"></span>Gemini</td>
+            <td><span class="dot codex" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px"></span>Codex</td>
+            <td>FakeOpenMeteoServer 네트워크 레이어 테스트, canPostNotifications()</td>
+            <td><span class="badge ok">3·4순위 개선 계획</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="insight" style="margin-top:16px">
+      <span class="insight-icon">🔄</span>
+      <div><strong>순환 학습 구조 발견 — "순환 학습 고리"란 무엇인가:</strong> 학습이 한 방향으로만 흐르지 않고 세 AI 사이에서 돌고 돈다는 뜻입니다. Claude → Codex에서 Repository 인터페이스를, Codex → Gemini에서 Retrofit DTO 구조를, Gemini → Claude에서 Repository 패턴을 배웠습니다. 즉 "가르치는 AI"와 "배우는 AI"가 역할이 고정되지 않고 계속 바뀌며, 세 AI 모두가 동시에 배우는 학생이자 가르치는 선생 역할을 했습니다. 이것이 <strong>완전한 상호 학습 고리</strong>입니다.</div>
+    </div>
+
+    <div class="insight" style="margin-top:12px">
+      <span class="insight-icon">🎯</span>
+      <div><strong>3개 AI 모두 공통 자가 개선 항목:</strong> "WeatherRepository를 인터페이스로 전환"이 Claude(5순위), Codex(1순위), Gemini(1순위) 모두에서 자가 개선 계획에 포함됐습니다. 각자 다른 이유로 같은 결론에 도달했다는 점이 흥미롭습니다.</div>
+    </div>
+  </section>
+
+  <!-- 04 자가 개선 계획 -->
+  <section class="card" id="improve">
+    <div class="sh"><span class="sh-num">04</span><h2>자가 개선 계획</h2></div>
+    <p style="color:var(--text2);margin-bottom:16px">각 AI가 리뷰를 마치고 "내 코드에서 바꾸겠다"고 제시한 구체적인 항목입니다. 각 항목 뒤에는 아이디어를 어느 AI에서 가져왔는지 출처를 표시했습니다. 실제로 코드를 바꾸지 않더라도, 어떤 패턴을 문제로 인식했고 어떤 해결책을 배웠는지가 이 실험의 핵심 데이터입니다.</p>
+
+    <div class="ai-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ai-card">
+        <div class="ai-card-head claude"><span class="dot claude"></span> Claude의 계획 (5개)</div>
+        <div class="ai-card-body" style="padding:0">
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <tbody>
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:10px 14px;font-weight:700;color:var(--ink);width:22px">1</td>
+                <td style="padding:10px 14px">FavoriteCityRepository 인터페이스 (Codex에서)</td>
+                <td style="padding:10px 14px;color:var(--text3);white-space:nowrap">medium</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:10px 14px;font-weight:700;color:var(--ink)">2</td>
+                <td style="padding:10px 14px">_uiState.update{} 원자적 업데이트 (Gemini에서)</td>
+                <td style="padding:10px 14px;color:var(--text3);white-space:nowrap">easy</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:10px 14px;font-weight:700;color:var(--ink)">3</td>
+                <td style="padding:10px 14px">WeatherUiState computed properties (Codex에서)</td>
+                <td style="padding:10px 14px;color:var(--text3);white-space:nowrap">easy</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:10px 14px;font-weight:700;color:var(--ink)">4</td>
+                <td style="padding:10px 14px">canPostNotifications() Worker 이중 가드 (Codex에서)</td>
+                <td style="padding:10px 14px;color:var(--text3);white-space:nowrap">easy</td>
+              </tr>
+              <tr>
+                <td style="padding:10px 14px;font-weight:700;color:var(--ink)">5</td>
+                <td style="padding:10px 14px">WeatherRepository → 인터페이스 전환</td>
+                <td style="padding:10px 14px;color:var(--text3);white-space:nowrap">medium</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="ai-card">
+        <div class="ai-card-head codex"><span class="dot codex"></span> Codex의 계획 (5개)</div>
+        <div class="ai-card-body" style="padding:0">
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <tbody>
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:10px 14px;font-weight:700;color:var(--ink);width:22px">1</td>
+                <td style="padding:10px 14px">WeatherRepository 의존성 주입 (Gemini·Claude에서)</td>
+                <td style="padding:10px 14px;color:var(--text3);white-space:nowrap">medium</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:10px 14px;font-weight:700;color:var(--ink)">2</td>
+                <td style="padding:10px 14px">fetchJob?.cancel() 경쟁 상태 방지 (Claude에서)</td>
+                <td style="padding:10px 14px;color:var(--text3);white-space:nowrap">easy</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:10px 14px;font-weight:700;color:var(--ink)">3</td>
+                <td style="padding:10px 14px">Worker 실 API 전환 (Claude·Gemini에서)</td>
+                <td style="padding:10px 14px;color:var(--text3);white-space:nowrap">medium</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:10px 14px;font-weight:700;color:var(--ink)">4</td>
+                <td style="padding:10px 14px">즐겨찾기 해제 저장 방식 명확화 (Claude·Gemini에서)</td>
+                <td style="padding:10px 14px;color:var(--text3);white-space:nowrap">easy</td>
+              </tr>
+              <tr>
+                <td style="padding:10px 14px;font-weight:700;color:var(--ink)">5</td>
+                <td style="padding:10px 14px">mutableStateOf → StateFlow 전환 (Claude·Gemini에서)</td>
+                <td style="padding:10px 14px;color:var(--text3);white-space:nowrap">medium</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="ai-card">
+        <div class="ai-card-head gemini"><span class="dot gemini"></span> Gemini의 계획 (4개)</div>
+        <div class="ai-card-body" style="padding:0">
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <tbody>
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:10px 14px;font-weight:700;color:var(--ink);width:22px">1</td>
+                <td style="padding:10px 14px">WeatherRepository 분리 (Claude·Codex에서)</td>
+                <td style="padding:10px 14px;color:var(--text3);white-space:nowrap">medium</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:10px 14px;font-weight:700;color:var(--ink)">2</td>
+                <td style="padding:10px 14px">fetchJob 취소 로직 추가 (Claude에서)</td>
+                <td style="padding:10px 14px;color:var(--text3);white-space:nowrap">easy</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:10px 14px;font-weight:700;color:var(--ink)">3</td>
+                <td style="padding:10px 14px">FakeServer / MockWebServer 테스트 (Codex에서)</td>
+                <td style="padding:10px 14px;color:var(--text3);white-space:nowrap">hard</td>
+              </tr>
+              <tr>
+                <td style="padding:10px 14px;font-weight:700;color:var(--ink)">4</td>
+                <td style="padding:10px 14px">mapWeatherCode 공통화 + canPostNotifications 추가 (Codex에서)</td>
+                <td style="padding:10px 14px;color:var(--text3);white-space:nowrap">medium</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="insight" style="margin-top:16px">
+      <span class="insight-icon">📊</span>
+      <div><strong>공통 개선 항목 집계:</strong> "Repository 인터페이스 전환"이 3개 AI 모두에 포함. "fetchJob 취소 로직"이 Claude 제외 2개 AI에 포함. "Worker 실 API 전환"이 Codex·Gemini 계획에 포함. Claude의 <code>fetchJob?.cancel()</code>은 Codex·Gemini가 강점으로 인정했고, Codex의 <code>FakeOpenMeteoServer</code>는 Claude·Gemini가 배우고 싶어했습니다.</div>
+    </div>
+  </section>
+
+  <!-- 05 토큰·시간 -->
+  <section class="card" id="tokens">
+    <div class="sh"><span class="sh-num">05</span><h2>토큰 · 소요 시간</h2></div>
+    <div class="ai-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="ai-card">
+        <div class="ai-card-head claude"><span class="dot claude"></span> Claude</div>
+        <div class="ai-card-body">
+          <div class="ai-stat"><span class="ai-stat-k">소요 시간</span><span class="ai-stat-v">~980초</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">리뷰 방식</span><span class="ai-stat-v">파일 직접 읽기 + 직접 작성</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">리뷰 파일 접근</span><span class="ai-stat-v"><span class="badge ok">성공</span></span></div>
+          <div class="ai-stat"><span class="ai-stat-k">개선 항목</span><span class="ai-stat-v">5개</span></div>
+        </div>
+      </div>
+      <div class="ai-card">
+        <div class="ai-card-head codex"><span class="dot codex"></span> Codex</div>
+        <div class="ai-card-body">
+          <div class="ai-stat"><span class="ai-stat-k">소요 시간</span><span class="ai-stat-v">671초 ⚡</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">리뷰 방식</span><span class="ai-stat-v">PowerShell Get-Content로 파일 읽기</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">리뷰 파일 접근</span><span class="ai-stat-v"><span class="badge ok">성공 (타 프로젝트 접근 가능)</span></span></div>
+          <div class="ai-stat"><span class="ai-stat-k">개선 항목</span><span class="ai-stat-v">5개</span></div>
+        </div>
+      </div>
+      <div class="ai-card">
+        <div class="ai-card-head gemini"><span class="dot gemini"></span> Gemini</div>
+        <div class="ai-card-body">
+          <div class="ai-stat"><span class="ai-stat-k">소요 시간</span><span class="ai-stat-v">~800초 (재실행 포함)</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">리뷰 방식</span><span class="ai-stat-v">리포 루트 실행 → 파일 직접 읽기</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">리뷰 파일 접근</span><span class="ai-stat-v"><span class="badge ok">성공 (루트 워크스페이스)</span></span></div>
+          <div class="ai-stat"><span class="ai-stat-k">개선 항목</span><span class="ai-stat-v">4개</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="insight" style="margin-top:16px">
+      <span class="insight-icon">💡</span>
+      <div><strong>실행 디렉토리가 리뷰 범위를 결정합니다:</strong> Gemini CLI는 프로젝트 디렉토리에서 실행하면 해당 디렉토리 밖 파일 접근이 제한됩니다. 리포 루트(<code>C:\proj\weather-ai-compare\</code>)에서 실행하면 모든 서브 프로젝트에 접근 가능합니다. 코드 리뷰처럼 여러 프로젝트를 참조해야 하는 작업은 <strong>실행 위치를 신중하게 선택해야 한다</strong>는 것을 보여준 실용적 관찰 포인트입니다.</div>
+    </div>
+  </section>
+
+  <!-- 06 최종 평가 -->
+  <section class="card" id="verdict">
+    <div class="sh"><span class="sh-num">06</span><h2>최종 평가</h2></div>
+    <div class="score-verdict-grid">
+      <div class="score-cell">
+        <div class="score-label"><span class="dot claude"></span> Claude</div>
+        <div class="score-desc">Codex의 DIP(의존성 역전 원칙) 패턴과 Gemini의 <code>_uiState.update{}</code> 원자적 상태 업데이트를 정확히 식별해 개선 계획으로 전환했습니다. 5개 항목 모두 클래스명·메서드명을 명시한 구체적 수준. 리뷰 전반에서 가장 자기비판적이었습니다 — "좋은 결정과 아쉬운 결정이 뒤섞여 있다".</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-label"><span class="dot codex"></span> Codex</div>
+        <div class="score-desc">가장 빠른 리뷰(671초). PowerShell로 파일을 직접 읽어 코드 레퍼런스가 가장 정확했습니다. 자가 개선 5개 항목 모두 다른 AI의 실제 코드 패턴을 인용해 구체적. "처음부터 Retrofit 또는 Repository 인터페이스를 먼저 세우겠다"는 소감이 V4~V8 설계 교훈을 가장 정확히 요약합니다.</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-label"><span class="dot gemini"></span> Gemini</div>
+        <div class="score-desc">초기 실행 시 워크스페이스 밖 파일 접근이 막혔지만, 리포 루트에서 재실행해 파일 직접 읽기에 성공했습니다. Claude의 <code>fetchJob?.cancel()</code>과 Codex의 <code>FakeOpenMeteoServer</code>를 실제 코드 레퍼런스로 인용해 4개 개선 항목을 도출. 실행 위치(디렉토리)가 AI 도구의 작업 범위를 결정한다는 실용적 교훈을 가장 잘 보여준 사례입니다.</div>
+      </div>
+    </div>
+
+    <div class="insight" style="margin-top:20px">
+      <span class="insight-icon">🏆</span>
+      <div><strong>V9 MVP — Codex:</strong> 파일 직접 접근, 가장 빠른 완료, 코드 레퍼런스가 정확한 개선 계획. Claude의 <code>fetchJob?.cancel()</code>을 강점으로 정확히 짚고, Gemini의 Retrofit DTO를 자기 코드 개선 영감으로 전환. <strong>코드를 읽고 배우는 능력</strong>에서 가장 체계적이었다.</div>
+    </div>
+
+    <div class="insight" style="margin-top:12px">
+      <span class="insight-icon">🔍</span>
+      <div><strong>V9 핵심 발견 — AI도 상호 학습이 가능하다:</strong> 3개 AI가 각자 다른 것을 강점으로 보유하고 있었습니다(Claude: 레이어 분리·코루틴 일관성 / Codex: 테스트 자동화·DIP 패턴 / Gemini: 빠른 구현 속도·스마트 기능). 각 AI는 자신에게 없는 강점을 상대 코드에서 정확히 찾아내고, 그것을 "다음에 내 코드에서 이렇게 바꾸겠다"는 구체적인 항목으로 전환했습니다. 이 패턴은 <strong>AI를 단독으로 실험할 때는 보이지 않으며, 오직 AI들이 서로를 평가하는 상호 리뷰 구도에서만 관찰할 수 있습니다.</strong></div>
+    </div>
+
+    <div class="insight" style="margin-top:12px">
+      <span class="insight-icon">🗂️</span>
+      <div><strong>V1→V9 전체 실험의 결론:</strong> V1 Codex 한국어 깨짐부터 V9 상호 학습 고리까지, 각 AI의 강점과 약점은 첫 버전에서 마지막 버전까지 놀랍도록 일관됐습니다. Gemini는 항상 가장 빨랐지만 V7에서 기존 테스트를 직접 수정하고 V8에서 runBlocking 안티패턴을 도입하는 등 후반 단계에서 품질 원칙이 흔들렸습니다. Codex는 효율적이고 설계 지향적이었지만 V8 Worker에서 실 API 대신 목 데이터를 쓰는 현실적 타협을 했습니다. Claude는 Repository 계층 분리와 코루틴 제어가 가장 체계적이었지만 소요 시간은 항상 가장 느렸습니다. <strong>이 패턴은 단일 과제 하나로는 보이지 않습니다. 8단계 누적 실험을 통해 처음으로 드러났습니다.</strong></div>
+    </div>
+  </section>
+
+  <footer class="rf">
+    <a href="report_v8.html">← V8 WorkManager</a>
+    <a href="index.html">전체 요약 →</a>
+  </footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>AI 바이브 코딩 실전 가이드 — WeatherNow 실험 분석</title>
+<link rel="stylesheet" href="report_common.css?v=20260601">
+<style>
+/* ── Hero ── */
+.guide-hero {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 40px 48px 32px;
+  margin-bottom: 16px;
+}
+.guide-kicker {
+  font-size: 11px; font-weight: 600; letter-spacing: 1.4px;
+  text-transform: uppercase; color: var(--text3); margin-bottom: 12px;
+}
+.guide-title {
+  font-size: 28px; font-weight: 800; letter-spacing: -.3px;
+  line-height: 1.25; margin-bottom: 10px; color: var(--text);
+}
+.guide-sub { font-size: 15px; color: var(--text2); line-height: 1.82; max-width: 680px; margin-bottom: 24px; }
+.hero-stats {
+  display: grid; grid-template-columns: repeat(4,1fr); gap: 0;
+  border-top: 1px solid var(--border); padding-top: 18px;
+}
+.hero-stat { padding-right: 24px; }
+.hero-stat-k { font-size: 11px; color: var(--text3); font-weight: 600; letter-spacing: .5px; text-transform: uppercase; margin-bottom: 4px; }
+.hero-stat-v { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -.3px; }
+.hero-stat-d { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+/* ── Section subheadings ── */
+.sec-h3 {
+  font-size: 15px; font-weight: 700; color: var(--text);
+  margin: 28px 0 10px; padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.sec-h3 .sec-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 600; color: var(--text3);
+  background: var(--bg); border-radius: 3px;
+  padding: 2px 7px; letter-spacing: .4px;
+}
+
+/* ── Pattern comparison (3-column) ── */
+.pattern-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin: 12px 0; }
+.pattern-card { border-radius: 4px; border: 1px solid var(--border); overflow: hidden; }
+.pattern-head {
+  padding: 9px 13px; font-size: 12px; font-weight: 700;
+  letter-spacing: .2px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--bg);
+}
+.pattern-head.claude { border-left: 3px solid var(--claude); }
+.pattern-head.codex  { border-left: 3px solid var(--codex); }
+.pattern-head.gemini { border-left: 3px solid var(--gemini); }
+.pattern-head .ph-ai   { font-weight: 700; color: var(--text); }
+.pattern-head .ph-verdict { font-size: 12.5px; color: var(--text3); }
+.pattern-body { padding: 13px 14px; font-size: 13px; line-height: 1.75; color: var(--text2); background: var(--surface); }
+.pattern-body code { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; background: var(--bg); padding: 1px 5px; border-radius: 3px; color: var(--text); }
+.pattern-body .verdict-bad  { color: #B91C1C; font-weight: 600; font-size: 12.5px; }
+.pattern-body .verdict-good { color: #166534; font-weight: 600; font-size: 12.5px; }
+
+/* ── Code diff (side-by-side) ── */
+.diff-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+.diff-pane { border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
+.diff-head { padding: 8px 13px; font-size: 11.5px; font-weight: 700; display: flex; align-items: center; gap: 7px; background: var(--bg); border-bottom: 1px solid var(--border); color: var(--text2); }
+.diff-head.bad  { border-left: 3px solid #B91C1C; }
+.diff-head.good { border-left: 3px solid #166534; }
+pre.diff-code {
+  background: var(--code-bg); color: var(--code-fg);
+  padding: 14px 16px; font-size: 12px; line-height: 1.75; margin: 0;
+  overflow-x: auto; font-family: 'JetBrains Mono', monospace; white-space: pre;
+}
+pre.diff-code .hl-bad  { background: rgba(185,28,28,.22); border-radius: 2px; }
+pre.diff-code .hl-good { background: rgba(22,101,52,.2);  border-radius: 2px; }
+pre.diff-code .cm { color: #555; }
+
+/* ── Inline code block ── */
+pre.inline-code {
+  background: var(--code-bg); color: var(--code-fg);
+  border-radius: 4px; padding: 10px 13px;
+  font-size: 11.5px; line-height: 1.65; margin: 8px 0 0;
+  font-family: 'JetBrains Mono', monospace; white-space: pre; overflow-x: auto;
+}
+
+/* ── Score bars ── */
+.score-block { margin: 16px 0 6px; }
+.score-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.score-rank {
+  font-family: 'JetBrains Mono', monospace;
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700;
+  background: var(--bg); color: var(--text3); border: 1px solid var(--border);
+}
+.score-name  { font-size: 13.5px; font-weight: 700; color: var(--text); width: 60px; flex-shrink: 0; }
+.score-track { flex: 1; height: 6px; background: var(--bg); border-radius: 2px; overflow: hidden; border: 1px solid var(--border); }
+.score-fill  { height: 100%; border-radius: 2px; }
+.score-fill.codex  { background: var(--codex); }
+.score-fill.gemini { background: var(--gemini); }
+.score-fill.claude { background: var(--claude); }
+.score-num  { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; color: var(--text); width: 28px; text-align: right; }
+.score-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-left: 4px; }
+.score-tag  { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 3px; white-space: nowrap; background: var(--bg); border: 1px solid var(--border); color: var(--text2); }
+.score-tag.good { background: #F0FDF4; color: #166534; border-color: #BBF7D0; }
+.score-tag.bad  { background: #FEF2F2; color: #B91C1C; border-color: #FECACA; }
+
+/* ── AI profile cards ── */
+.ai-profile-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin: 14px 0; }
+.ai-profile { border-radius: 6px; border: 1px solid var(--border); overflow: hidden; }
+.ap-header { padding: 14px 18px 12px; border-bottom: 1px solid var(--border); background: var(--bg); }
+.ap-header.claude { border-left: 3px solid var(--claude); }
+.ap-header.codex  { border-left: 3px solid var(--codex); }
+.ap-header.gemini { border-left: 3px solid var(--gemini); }
+.ap-name  { font-size: 18px; font-weight: 800; margin-bottom: 1px; color: var(--text); }
+.ap-model { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text3); font-weight: 500; }
+.ap-body  { padding: 14px 18px; background: var(--surface); }
+.ap-section { margin-bottom: 12px; }
+.ap-section:last-child { margin-bottom: 0; }
+.ap-label {
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .8px; color: var(--text3); margin-bottom: 6px;
+}
+.ap-items { display: flex; flex-direction: column; gap: 4px; }
+.ap-item  {
+  font-size: 13px; color: var(--text2); line-height: 1.6;
+  padding: 5px 10px 5px 24px; position: relative;
+}
+.ap-item::before {
+  content: ''; position: absolute; left: 9px; top: 11px;
+  width: 5px; height: 5px; border-radius: 50%;
+}
+.ap-item.good::before { background: var(--codex); }
+.ap-item.bad::before  { background: #B91C1C; }
+.ap-item.warn::before { background: #B45309; }
+
+/* ── Checklist ── */
+.check-section { margin: 14px 0; }
+.check-phase {
+  font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--text2); margin: 20px 0 7px; padding: 7px 13px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+  display: flex; align-items: center; gap: 8px;
+}
+.check-phase .cp-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; background: var(--text); color: #fff;
+  border-radius: 3px; padding: 1px 6px;
+}
+.check-list { display: flex; flex-direction: column; gap: 3px; }
+.check-row {
+  display: flex; align-items: flex-start; gap: 11px;
+  padding: 10px 13px; border-radius: 4px;
+  border: 1px solid var(--border); background: var(--surface);
+  font-size: 13.5px; line-height: 1.7; color: var(--text2);
+}
+.check-row.hi { background: var(--bg); border-color: var(--border2); }
+.check-box {
+  flex-shrink: 0; width: 15px; height: 15px;
+  border: 1.5px solid var(--border2); border-radius: 3px; margin-top: 3px;
+}
+.check-row strong { color: var(--text); }
+
+/* ── Rule list (review checklist) ── */
+.rule-list { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin: 12px 0; }
+.rule-item {
+  display: flex; gap: 14px; padding: 14px 18px;
+  border-bottom: 1px solid var(--border); align-items: flex-start;
+}
+.rule-item:last-child { border-bottom: none; }
+.rule-item:nth-child(even) { background: var(--bg); }
+.rule-num {
+  flex-shrink: 0; width: 24px; height: 24px; border-radius: 4px;
+  background: var(--bg); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 700; color: var(--text3); margin-top: 1px;
+}
+.rule-body { flex: 1; }
+.rule-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+.rule-desc  { font-size: 13px; color: var(--text2); line-height: 1.7; }
+.rule-source { font-size: 11.5px; color: var(--text3); margin-top: 5px; padding-left: 10px; border-left: 2px solid var(--border); }
+
+/* ── Guide boxes ── */
+.guide-box { border-radius: 4px; padding: 14px 16px; margin: 10px 0; font-size: 13.5px; line-height: 1.75; background: var(--surface); border: 1px solid var(--border); color: var(--text2); }
+.guide-box.blue  { border-left: 3px solid var(--gemini); }
+.guide-box.green { border-left: 3px solid var(--codex); }
+.guide-box.amber { border-left: 3px solid var(--claude); }
+.guide-box strong { font-weight: 700; color: var(--text); }
+
+/* ── Team grid ── */
+.team-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin-top: 14px; }
+.team-card { border: 1px solid var(--border); border-radius: 6px; padding: 15px 17px; background: var(--surface); }
+.team-card-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 10px; padding-bottom: 7px; border-bottom: 1px solid var(--border); }
+.team-list { display: flex; flex-direction: column; gap: 5px; }
+.team-item { font-size: 13px; color: var(--text2); line-height: 1.6; padding-left: 14px; position: relative; }
+.team-item::before { content: '·'; position: absolute; left: 3px; color: var(--text3); }
+
+/* ── Nav ── */
+.back-nav { margin-bottom: 18px; }
+.back-link { text-decoration: none; color: var(--text3); font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; }
+.back-link:hover { color: var(--text); }
+
+@media (max-width: 760px) {
+  .guide-hero { padding: 24px 20px; }
+  .guide-title { font-size: 24px; }
+  .hero-stats { grid-template-columns: repeat(2,1fr); gap: 16px; }
+  .pattern-grid, .ai-profile-grid, .diff-grid, .team-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="wrap wide">
+
+  <div class="back-nav">
+    <a class="back-link" href="index.html">← 전체 보고서로</a>
+  </div>
+
+  <!-- ── HERO ── -->
+  <header class="guide-hero">
+    <div class="guide-kicker">WeatherNow AI 비교 실험 · 코드 분석</div>
+    <h1 class="guide-title">AI 바이브 코딩 실전 가이드</h1>
+    <p class="guide-sub">Claude, Codex, Gemini가 생성한 Android Kotlin / Jetpack Compose(안드로이드 선언형 UI 프레임워크) 코드를 실제 파일 기준으로 분석했습니다. 기능 비교가 아닌 <strong>코드 작성 규칙</strong> 비교입니다 — 상태 관리, 컴포넌트 설계, 패키지 구조, 성능 패턴까지.</p>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-k">분석 프로젝트</div>
+        <div class="hero-stat-v">3개</div>
+        <div class="hero-stat-d">Claude · Codex · Gemini</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-k">분석 Kotlin 파일</div>
+        <div class="hero-stat-v">16개</div>
+        <div class="hero-stat-d">ViewModel · UI · Data</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-k">비교 패턴 항목</div>
+        <div class="hero-stat-v">6가지</div>
+        <div class="hero-stat-d">상태·설계·구조·성능 등</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-k">패턴 적용 최다</div>
+        <div class="hero-stat-v">Codex</div>
+        <div class="hero-stat-d">private · 순수 함수 · computed</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── TOC ── -->
+  <nav class="toc">
+    <a href="index.html">← 전체 요약</a>
+    <a href="#s1">01 코드 패턴 비교</a>
+    <a href="#s2">02 AI별 특성</a>
+    <a href="#s3">03 바이브 코딩 체크리스트</a>
+    <a href="#s4">04 팀 도입 가이드</a>
+    <a href="#s5">05 코드 리뷰 체크리스트</a>
+    <a href="#s6">06 결론</a>
+  </nav>
+
+  <!-- ── S1 ── -->
+  <section class="card" id="s1">
+    <div class="sh"><span class="sh-num">01</span><h2>코드 패턴 비교 — 기능 제외, 코드 규칙만</h2></div>
+    <p class="lead">동일한 스펙을 주었을 때 세 AI가 어떤 코드 패턴을 선택했는지 비교합니다. 어떤 기능을 넣었느냐가 아닌, 그 기능을 <strong>어떻게 구현했느냐</strong>입니다.</p>
+
+    <!-- 1-1 -->
+    <div class="sec-h3"><span class="sec-num">1-1</span> ViewModel 상태 관리 방식</div>
+    <p class="lead">ViewModel(화면 로직을 담당하는 클래스, UI와 데이터 로직을 분리함)의 상태를 관리하는 방식은 크게 두 가지입니다. 세 AI가 각각 다른 선택을 했고 안전성 차이가 발생했습니다.</p>
+
+    <div class="pattern-grid">
+      <div class="pattern-card">
+        <div class="pattern-head claude">
+          <span class="ph-ai"><span class="dot claude" style="margin-right:5px;"></span>Claude</span>
+          <span class="ph-verdict">⚠ 주의</span>
+        </div>
+        <div class="pattern-body">
+          <strong>StateFlow(상태 변화를 구독자에게 흘려보내는 코루틴 기반 스트림) + .value = .copy()</strong><br>
+          <code>MutableStateFlow</code>를 사용하되, 업데이트를 <code>value = value.copy()</code>로 처리.<br><br>
+          <span class="verdict-bad">⚠ 비동기 race condition 위험.</span> 두 코루틴(비동기 처리를 위한 코틀린 동시성 모델)이 동시에 읽고 쓰면 먼저 읽은 값이 덮어씌워질 수 있음.
+        </div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-head codex">
+          <span class="ph-ai"><span class="dot codex" style="margin-right:5px;"></span>Codex</span>
+          <span class="ph-verdict">✅ 무난</span>
+        </div>
+        <div class="pattern-body">
+          <strong>mutableStateOf (Compose-native)</strong><br>
+          <code>var uiState by mutableStateOf(...)</code>로 Compose 런타임이 직접 상태 변화를 추적. 코드가 가장 간결.<br><br>
+          단, ViewModel이 Compose 런타임에 의존하므로 순수 Kotlin 단위 테스트 시 별도 처리가 필요.
+        </div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-head gemini">
+          <span class="ph-ai"><span class="dot gemini" style="margin-right:5px;"></span>Gemini</span>
+          <span class="ph-verdict">✅✅ 권장</span>
+        </div>
+        <div class="pattern-body">
+          <strong>StateFlow + .update {}</strong><br>
+          <code>_uiState.update { it.copy(...) }</code>로 원자적 업데이트.<br><br>
+          <span class="verdict-good">✅ CAS 방식으로 동시성 문제 방지.</span> 코루틴 환경에서 가장 안전한 패턴. 프로덕션에서 권장.
+        </div>
+      </div>
+    </div>
+
+    <div class="diff-grid">
+      <div class="diff-pane">
+        <div class="diff-head bad">❌ Claude — 비원자적 업데이트 (race condition 위험)</div>
+        <pre class="diff-code">fun selectCity(index: Int) {
+    <span class="hl-bad">_uiState.value = _uiState.value.copy(</span>  <span class="cm">// 읽기</span>
+        selectedIndex = index,             <span class="cm">// 쓰기 사이에 gap 존재</span>
+        weatherData = mockWeatherList[index]
+    )
+}</pre>
+      </div>
+      <div class="diff-pane">
+        <div class="diff-head good">✅ Gemini — 원자적 update {} (안전)</div>
+        <pre class="diff-code">fun selectCity(city: String) {
+    val weather = mockWeatherList
+        .find { it.city == city } ?: return
+    <span class="hl-good">_uiState.update {</span>         <span class="cm">// 원자적 람다</span>
+        it.copy(weatherData = weather)
+    }
+}</pre>
+      </div>
+    </div>
+
+    <!-- 1-2 -->
+    <div class="sec-h3"><span class="sec-num">1-2</span> Composable 파라미터 설계</div>
+    <p class="lead">Composable(Jetpack Compose에서 UI를 그리는 함수 단위)에 ViewModel을 직접 넘기면 @Preview(Android Studio에서 UI를 미리 보는 기능) 사용이 불가능하고 단위 테스트가 어려워집니다. 상태(UiState)와 이벤트(콜백)만 파라미터로 받는 순수 함수 형태가 올바른 설계입니다.</p>
+
+    <div class="diff-grid">
+      <div class="diff-pane">
+        <div class="diff-head bad">❌ Claude / Gemini — ViewModel 직접 주입</div>
+        <pre class="diff-code"><span class="cm">// @Preview 불가, 단위 테스트 어려움</span>
+@Composable
+fun WeatherScreen(
+    <span class="hl-bad">viewModel: WeatherViewModel</span>
+) {
+    val uiState by viewModel.uiState
+        .collectAsStateWithLifecycle()
+    <span class="cm">// viewModel 메서드를 직접 호출</span>
+}</pre>
+      </div>
+      <div class="diff-pane">
+        <div class="diff-head good">✅ Codex — 순수 Composable (UiState + callbacks)</div>
+        <pre class="diff-code"><span class="cm">// @Preview 가능, 테스트 용이</span>
+@Composable
+fun WeatherScreen(
+    <span class="hl-good">uiState: WeatherUiState,</span>
+    <span class="hl-good">onCitySelected: (Int) -> Unit,</span>
+    <span class="hl-good">onRefresh: () -> Unit,</span>
+    <span class="hl-good">onFavoriteToggle: () -> Unit</span>
+) { ... }</pre>
+      </div>
+    </div>
+
+    <!-- 1-3 -->
+    <div class="sec-h3"><span class="sec-num">1-3</span> 내부 Composable의 <code>private</code> 수식자</div>
+    <p class="lead">파일 내부에서만 쓰는 Composable은 <code>private</code>으로 선언해야 합니다. 외부에 불필요하게 노출되면 의도치 않은 호출이 생기고 리팩토링 범위가 넓어집니다. Codex만 이를 지켰습니다.</p>
+
+    <div class="pattern-grid">
+      <div class="pattern-card">
+        <div class="pattern-head claude">
+          <span class="ph-ai"><span class="dot claude" style="margin-right:5px;"></span>Claude</span>
+          <span class="ph-verdict">❌ 미적용</span>
+        </div>
+        <div class="pattern-body">
+          내부 Composable에 <code>private</code> 없음. <code>CitySelector</code>, <code>WeatherCard</code> 등이 파일 외부로 노출됨.
+          <pre class="inline-code">@Composable
+fun CitySelector(...)  // public — 의도치 않은 노출
+@Composable
+fun WeatherCard(...)   // public</pre>
+        </div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-head codex">
+          <span class="ph-ai"><span class="dot codex" style="margin-right:5px;"></span>Codex</span>
+          <span class="ph-verdict">✅✅ 완벽</span>
+        </div>
+        <div class="pattern-body">
+          파일 내부 Composable 전부 <code>private</code>. 외부에서 쓰는 컴포넌트(<code>ForecastRow</code>, <code>MetricTile</code>)만 별도 파일로 공개.
+          <pre class="inline-code">@Composable
+private fun WeatherHeader(...)   // ✅
+@Composable
+private fun HourlySection(...)   // ✅</pre>
+        </div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-head gemini">
+          <span class="ph-ai"><span class="dot gemini" style="margin-right:5px;"></span>Gemini</span>
+          <span class="ph-verdict">❌ 미적용</span>
+        </div>
+        <div class="pattern-body">
+          내부 Composable에 <code>private</code> 없음. 게다가 와일드카드 import 사용으로 어떤 심볼이 실제로 쓰이는지 파악이 어려움.
+          <pre class="inline-code">import androidx.compose.material3.*
+import androidx.compose.foundation.layout.*
+// 어떤 심볼이 쓰이는지 불명확</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1-4 -->
+    <div class="sec-h3"><span class="sec-num">1-4</span> UiState에 계산 프로퍼티 넣기</div>
+    <p class="lead">UI에서 매번 계산하는 값이 있다면 <code>data class UiState</code>(화면에 보여줄 데이터를 담는 불변 데이터 묶음) 안에 계산 프로퍼티로 정의하면 중복이 사라집니다. Codex만 이 패턴을 사용했습니다.</p>
+
+    <div class="diff-grid">
+      <div class="diff-pane">
+        <div class="diff-head bad">❌ Claude / Gemini — UI 레이어에서 매번 계산</div>
+        <pre class="diff-code"><span class="cm">// WeatherScreen.kt 여러 Composable에서 반복</span>
+val weather =
+    uiState.weatherList[uiState.selectedIndex]
+val isFavorite =
+    uiState.selectedIndex == uiState.favoriteIdx
+<span class="cm">// 같은 코드가 여러 곳에 중복됨</span></pre>
+      </div>
+      <div class="diff-pane">
+        <div class="diff-head good">✅ Codex — UiState에 computed property 정의</div>
+        <pre class="diff-code">data class WeatherUiState(
+    val selectedCityIndex: Int = 0,
+    val weatherList: List&lt;WeatherData&gt; = ...,
+    val favoriteCityIndex: Int? = null
+) {
+    <span class="hl-good">val selectedWeather</span>
+        get() = weatherList[selectedCityIndex]
+    <span class="hl-good">val isSelectedCityFavorite</span>
+        get() = selectedCityIndex == favoriteCityIndex
+}</pre>
+      </div>
+    </div>
+
+    <!-- 1-5 -->
+    <div class="sec-h3"><span class="sec-num">1-5</span> 렌더링 성능 패턴</div>
+    <p class="lead"><code>Column + forEach</code>는 모든 아이템을 한 번에 그립니다. 아이템이 늘어날수록 화면에 보이는 것만 그리는 <code>LazyColumn</code>(화면 밖 항목을 그리지 않아 메모리·성능 절약)이 필수입니다. Gemini만 일관되게 Lazy를 사용했습니다.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>항목</th>
+            <th class="th-claude">Claude</th>
+            <th class="th-codex">Codex</th>
+            <th class="th-gemini">Gemini</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-label">5일 예보 목록</td>
+            <td>Column + forEach ❌</td>
+            <td>Column + forEach ❌</td>
+            <td>LazyColumn ✅</td>
+          </tr>
+          <tr>
+            <td class="col-label">시간별 예보 목록</td>
+            <td>LazyRow ✅</td>
+            <td>horizontalScroll + Row ❌</td>
+            <td>LazyRow ✅</td>
+          </tr>
+          <tr>
+            <td class="col-label">상태바 패딩</td>
+            <td>enableEdgeToEdge() ✅</td>
+            <td>statusBarsPadding() ✅</td>
+            <td>padding(top=48.dp) ❌ 하드코딩</td>
+          </tr>
+          <tr>
+            <td class="col-label">StateFlow 수집</td>
+            <td>collectAsStateWithLifecycle ✅ (앱이 백그라운드일 때 자동 중단)</td>
+            <td>mutableStateOf 사용 (직접 관찰 불필요)</td>
+            <td>collectAsState() ❌ lifecycle 누수 (백그라운드에서도 계속 실행됨)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 1-6 -->
+    <div class="sec-h3"><span class="sec-num">1-6</span> 패키지 구조</div>
+    <p class="lead">MVVM(Model-View-ViewModel — 화면·로직 분리 아키텍처 패턴) 프로젝트는 <code>data/</code>, <code>viewmodel/</code>, <code>ui/</code> 레이어별 폴더 분리가 기본입니다. 세 AI가 서로 다른 구조를 선택했습니다.</p>
+
+    <div class="pattern-grid">
+      <div class="pattern-card">
+        <div class="pattern-head claude">
+          <span class="ph-ai"><span class="dot claude" style="margin-right:5px;"></span>Claude</span>
+          <span class="ph-verdict">구조 ✅ 실행 ⚠</span>
+        </div>
+        <div class="pattern-body">
+          레이어 분리 구조 자체는 가장 올바름. 단 <code>WeatherScreen.kt</code>가 340줄 단일 파일이고, <code>conditionEmoji()</code> 같은 유틸 함수가 UI 파일 최상단에 노출됨.
+          <pre class="inline-code">data/ WeatherData.kt      ✅
+viewmodel/ WeatherViewModel.kt ✅
+ui/ WeatherScreen.kt    ← 340줄 모놀리식 ❌
+ui/theme/ Theme.kt      ✅</pre>
+        </div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-head codex">
+          <span class="ph-ai"><span class="dot codex" style="margin-right:5px;"></span>Codex</span>
+          <span class="ph-verdict">컴포넌트 ✅ 위치 ⚠</span>
+        </div>
+        <div class="pattern-body">
+          컴포넌트 분리가 가장 잘 됨. 단, <code>WeatherData.kt</code>와 <code>WeatherViewModel.kt</code>가 루트 패키지에 위치. Theme 정의가 <code>WeatherScreen.kt</code> 안에 섞여 있음.
+          <pre class="inline-code">WeatherData.kt       ❌ 루트
+WeatherViewModel.kt  ❌ 루트
+ui/ WeatherScreen.kt ✅
+ui/components/
+  ForecastRow.kt     ✅
+  MetricTile.kt      ✅</pre>
+        </div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-head gemini">
+          <span class="ph-ai"><span class="dot gemini" style="margin-right:5px;"></span>Gemini</span>
+          <span class="ph-verdict">컴포넌트 ✅ 위치 ⚠</span>
+        </div>
+        <div class="pattern-body">
+          컴포넌트를 별도 파일로 묶음. 단, Data/ViewModel이 루트 패키지에 위치하고 Composable 내부에 도시 목록이 하드코딩됨.
+          <pre class="inline-code">WeatherData.kt        ❌ 루트
+WeatherViewModel.kt   ❌ 루트
+ui/ WeatherScreen.kt
+ui/components/
+  WeatherComponents.kt ✅</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- fact table -->
+    <div class="sec-h3"><span class="sec-num">종합</span> 패턴 적용 여부</div>
+    <p class="lead">6개 패턴 영역에서 각 AI가 실제로 해당 패턴을 적용했는지 확인한 결과입니다.</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>패턴</th>
+            <th class="th-claude">Claude</th>
+            <th class="th-codex">Codex</th>
+            <th class="th-gemini">Gemini</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="col-label">private Composable</td><td>❌</td><td>✅</td><td>❌</td></tr>
+          <tr><td class="col-label">순수 함수 설계</td><td>❌</td><td>✅</td><td>❌</td></tr>
+          <tr><td class="col-label">원자적 상태 (update{})</td><td>❌</td><td>❌</td><td>✅</td></tr>
+          <tr><td class="col-label">computed UiState</td><td>❌</td><td>✅</td><td>❌</td></tr>
+          <tr><td class="col-label">LazyColumn 성능</td><td>❌</td><td>❌</td><td>✅</td></tr>
+          <tr><td class="col-label">레이어 분리 구조</td><td>✅</td><td>❌</td><td>❌</td></tr>
+          <tr><td class="col-label">lifecycle 안전</td><td>✅</td><td>✅</td><td>⚠️ collectAsState 사용</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── S2 ── -->
+  <section class="card" id="s2">
+    <div class="sh"><span class="sh-num">02</span><h2>AI별 특성 — 강점, 주의점, 활용 제안</h2></div>
+    <p class="lead">각 AI가 잘하는 것과 놓치는 것을 파악하면, 생성 후 어느 부분에 집중해서 리뷰해야 하는지 알 수 있습니다.</p>
+
+    <div class="ai-profile-grid">
+      <div class="ai-profile">
+        <div class="ap-header claude">
+          <div class="ap-name claude">Claude</div>
+          <div class="ap-model">claude-sonnet-4-6 · Claude Code CLI</div>
+        </div>
+        <div class="ap-body">
+          <div class="ap-section">
+            <div class="ap-label">강점</div>
+            <div class="ap-items">
+              <span class="ap-item good">data / viewmodel / ui 레이어 분리 구조 올바르게 생성</span>
+              <span class="ap-item good">collectAsStateWithLifecycle() 사용 — lifecycle 안전</span>
+              <span class="ap-item good">enableEdgeToEdge() + WindowInsets 처리 포함</span>
+            </div>
+          </div>
+          <div class="ap-section">
+            <div class="ap-label">주의할 점</div>
+            <div class="ap-items">
+              <span class="ap-item bad">WeatherScreen.kt 340줄 — 컴포넌트 분리 없음</span>
+              <span class="ap-item bad">내부 Composable에 private 없음</span>
+              <span class="ap-item bad">conditionEmoji() 등 유틸 함수가 UI 파일에 노출</span>
+              <span class="ap-item bad">_uiState.value = .copy() — race condition 위험</span>
+            </div>
+          </div>
+          <div class="ap-section">
+            <div class="ap-label">생성 후 필수 후처리</div>
+            <div class="ap-items">
+              <span class="ap-item warn">WeatherScreen.kt → components/ 파일로 분리</span>
+              <span class="ap-item warn">내부 Composable에 private 추가</span>
+              <span class="ap-item warn">.value = .copy() → .update {} 교체</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ai-profile">
+        <div class="ap-header codex">
+          <div class="ap-name codex">Codex</div>
+          <div class="ap-model">gpt-5.5 · OpenAI Codex CLI</div>
+        </div>
+        <div class="ap-body">
+          <div class="ap-section">
+            <div class="ap-label">강점</div>
+            <div class="ap-items">
+              <span class="ap-item good">내부 Composable 전부 private — 캡슐화 완벽</span>
+              <span class="ap-item good">WeatherScreen(uiState, callbacks) — 순수 함수 설계</span>
+              <span class="ap-item good">UiState computed property (selectedWeather 등)</span>
+              <span class="ap-item good">selectCity() 경계값 검사 포함</span>
+              <span class="ap-item good">APK 자동 빌드까지 완료</span>
+            </div>
+          </div>
+          <div class="ap-section">
+            <div class="ap-label">주의할 점</div>
+            <div class="ap-items">
+              <span class="ap-item bad">Data · ViewModel 파일이 루트 패키지에 위치</span>
+              <span class="ap-item bad">Theme/ColorScheme가 WeatherScreen.kt 안에 정의됨</span>
+              <span class="ap-item warn">mutableStateOf — Compose 런타임 의존 (테스트 시 주의)</span>
+            </div>
+          </div>
+          <div class="ap-section">
+            <div class="ap-label">생성 후 필수 후처리</div>
+            <div class="ap-items">
+              <span class="ap-item warn">Data · ViewModel → 레이어별 폴더로 이동</span>
+              <span class="ap-item warn">Theme 정의 → ui/theme/Theme.kt로 분리</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ai-profile">
+        <div class="ap-header gemini">
+          <div class="ap-name gemini">Gemini</div>
+          <div class="ap-model">gemini-3-flash-preview · Gemini CLI</div>
+        </div>
+        <div class="ap-body">
+          <div class="ap-section">
+            <div class="ap-label">강점</div>
+            <div class="ap-items">
+              <span class="ap-item good">_uiState.update {} — 가장 안전한 StateFlow 패턴</span>
+              <span class="ap-item good">LazyColumn + LazyRow — 성능 최적화</span>
+              <span class="ap-item good">animateColorAsState — 온도 기반 배경 애니메이션</span>
+              <span class="ap-item good">selectCity(city: String) 이름 기반 — 인덱스 오류 방지</span>
+              <span class="ap-item good">전 단계 최단 생성 시간 (V1 318초)</span>
+            </div>
+          </div>
+          <div class="ap-section">
+            <div class="ap-label">주의할 점</div>
+            <div class="ap-items">
+              <span class="ap-item bad">collectAsState() — lifecycle 누수 위험</span>
+              <span class="ap-item bad">도시 목록 Composable 내부 하드코딩</span>
+              <span class="ap-item bad">padding(top=48.dp) 하드코딩 — 기기마다 깨짐</span>
+              <span class="ap-item bad">내부 Composable에 private 없음</span>
+            </div>
+          </div>
+          <div class="ap-section">
+            <div class="ap-label">생성 후 필수 후처리</div>
+            <div class="ap-items">
+              <span class="ap-item warn">collectAsState() → collectAsStateWithLifecycle() 교체</span>
+              <span class="ap-item warn">하드코딩 데이터 · 패딩 제거</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── S3 ── -->
+  <section class="card" id="s3">
+    <div class="sh"><span class="sh-num">03</span><h2>바이브 코딩 체크리스트 — Before / During / After</h2></div>
+    <p class="lead">AI 코드 생성 전후로 팀이 지켜야 할 규칙을 3단계로 정리했습니다. <span style="background:var(--bg);padding:1px 6px;border-radius:3px;font-size:13px;color:var(--text2);font-weight:700;border:1px solid var(--border2);">굵게 표시된 항목</span>이 실험에서 가장 많이 놓친 항목입니다.</p>
+
+    <div class="check-section">
+      <div class="check-phase"><span class="cp-num">BEFORE</span> 프롬프트 작성 전 — 팀 규칙 먼저 설정</div>
+      <div class="check-list">
+        <div class="check-row hi">
+          <div class="check-box"></div>
+          <div><strong>아키텍처 레이어를 명시한다.</strong> "data/, viewmodel/, ui/ 폴더 구조를 따를 것"을 프롬프트에 포함. 지시 없으면 루트에 모든 파일을 넣는다.</div>
+        </div>
+        <div class="check-row hi">
+          <div class="check-box"></div>
+          <div><strong>상태 관리 방식을 지정한다.</strong> "StateFlow + _uiState.update{} 패턴 사용" 명시. AI마다 기본값이 다르고 안전성도 다르다.</div>
+        </div>
+        <div class="check-row hi">
+          <div class="check-box"></div>
+          <div><strong>Composable 설계 원칙을 지정한다.</strong> "ViewModel 직접 주입 금지 — UiState + 콜백 파라미터 방식 사용", "내부 Composable은 private 선언"</div>
+        </div>
+        <div class="check-row">
+          <div class="check-box"></div>
+          <div><strong>금지 패턴을 명시한다.</strong> "collectAsStateWithLifecycle() 사용", "와일드카드 import 금지", "하드코딩 dp 패딩 금지"</div>
+        </div>
+        <div class="check-row">
+          <div class="check-box"></div>
+          <div><strong>파일 크기 제한을 안내한다.</strong> "한 파일 200줄 초과 시 components/ 로 분리" — 지시 없으면 모든 UI를 한 파일에 넣는다.</div>
+        </div>
+        <div class="check-row">
+          <div class="check-box"></div>
+          <div><strong>Theme 파일 위치를 지정한다.</strong> "ColorScheme는 ui/theme/Theme.kt에 정의할 것" — 미지정 시 화면 파일 안에 섞인다.</div>
+        </div>
+      </div>
+
+      <div class="check-phase"><span class="cp-num">DURING</span> 생성 중 — 실시간 확인</div>
+      <div class="check-list">
+        <div class="check-row hi">
+          <div class="check-box"></div>
+          <div><strong>파일 생성 경로를 확인한다.</strong> 파일이 어느 폴더에 생성되는지 실시간 확인. 루트에 몰리면 즉시 수정 요청.</div>
+        </div>
+        <div class="check-row">
+          <div class="check-box"></div>
+          <div><strong>ViewModel 상태 패턴을 확인한다.</strong> <code>_uiState.value =</code> 패턴이 보이면 <code>.update {}</code>로 수정 요청.</div>
+        </div>
+        <div class="check-row">
+          <div class="check-box"></div>
+          <div><strong>WeatherScreen 시그니처를 확인한다.</strong> <code>fun WeatherScreen(viewModel: ViewModel)</code>이면 <code>fun WeatherScreen(uiState, callbacks)</code>로 수정 요청.</div>
+        </div>
+        <div class="check-row">
+          <div class="check-box"></div>
+          <div><strong>import 목록을 확인한다.</strong> <code>import androidx.compose.material3.*</code> 형태의 와일드카드가 나타나면 명시적 import로 교체 요청.</div>
+        </div>
+      </div>
+
+      <div class="check-phase"><span class="cp-num">AFTER</span> 커밋 전 — 리뷰 필수 항목</div>
+      <div class="check-list">
+        <div class="check-row hi">
+          <div class="check-box"></div>
+          <div><strong>collectAsStateWithLifecycle() 여부 확인.</strong> <code>collectAsState()</code>가 있으면 전부 교체. Gemini 생성 코드에서 자주 발생.</div>
+        </div>
+        <div class="check-row hi">
+          <div class="check-box"></div>
+          <div><strong>하드코딩 값 검색.</strong> <code>padding(top = **.dp)</code>, 도시 목록 리터럴이 Composable 내부에 있으면 제거.</div>
+        </div>
+        <div class="check-row hi">
+          <div class="check-box"></div>
+          <div><strong>private 수식자 확인.</strong> 외부에서 사용하지 않는 Composable에 <code>private</code> 추가. Claude, Gemini 생성 코드에서 빠져 있음.</div>
+        </div>
+        <div class="check-row">
+          <div class="check-box"></div>
+          <div><strong>유틸 함수 위치 확인.</strong> <code>conditionEmoji()</code> 같은 순수 변환 함수가 UI 파일에 있으면 data 레이어로 이동.</div>
+        </div>
+        <div class="check-row">
+          <div class="check-box"></div>
+          <div><strong>경계값 검사 추가.</strong> 인덱스로 리스트 접근하는 함수에 <code>if (index in list.indices)</code> 추가.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── S4 ── -->
+  <section class="card" id="s4">
+    <div class="sh"><span class="sh-num">04</span><h2>팀 도입 가이드</h2></div>
+    <p class="lead">이번 실험의 핵심 교훈: <strong>세 AI 모두 규칙을 주지 않으면 제각각으로 만든다.</strong> CLAUDE.md(AI에게 프로젝트 규칙을 알려주는 지시서 파일) 같은 규칙 파일로 팀 컨벤션을 한 번만 작성해두면 매번 프롬프트에 반복하지 않아도 됩니다.</p>
+
+    <div class="guide-box blue">
+      <strong>CLAUDE.md / .cursorrules 활용법</strong><br>
+      프로젝트 루트에 AI 지시 파일을 작성해두면 Claude Code, Cursor 등 대부분의 AI 도구가 해당 규칙을 자동으로 참고합니다. 이 파일을 git에 커밋(버전 저장)해 팀 전체가 공유하세요.
+    </div>
+
+    <pre style="background:#1A1A1A;color:#E2E8F0;border-radius:10px;padding:18px 20px;font-size:12.5px;line-height:1.75;overflow-x:auto;font-family:'Consolas','Menlo',monospace;margin:14px 0;">## Kotlin / Jetpack Compose 컨벤션 (CLAUDE.md 예시)
+
+### 아키텍처
+- 패키지 구조: data/ · viewmodel/ · ui/ · ui/theme/ · ui/components/
+- ViewModel은 StateFlow + _uiState.update{} 패턴만 사용
+- Composable에 ViewModel 직접 주입 금지 → UiState + callback 파라미터 방식 사용
+
+### Composable 규칙
+- 파일 외부에서 사용하지 않는 Composable은 private 선언 필수
+- 한 파일 200줄 초과 시 components/ 에 파일로 분리
+- 와일드카드 import 금지 (import xxx.* 사용 금지)
+
+### 안전성
+- collectAsStateWithLifecycle() 사용 (collectAsState() 금지)
+- 인덱스 기반 리스트 접근 전 if (index in list.indices) 검사 필수
+- 하드코딩 dp 패딩 금지 → statusBarsPadding() / WindowInsets 사용
+
+### 금지 패턴
+- _uiState.value = _uiState.value.copy() → .update {} 로 교체
+- Composable 내부에 데이터 리터럴 하드코딩 금지
+- ColorScheme 정의를 화면 파일에 넣지 말 것 → ui/theme/Theme.kt 에만</pre>
+
+    <div class="sec-h3" style="margin-top:24px;"><span class="sec-num">상황별</span> 어떤 AI를 언제 쓸까</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>상황</th>
+            <th class="th-claude">Claude</th>
+            <th class="th-codex">Codex</th>
+            <th class="th-gemini">Gemini</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-label">신규 프로젝트 뼈대 생성</td>
+            <td>✅ 레이어 구조 잘 만듦</td>
+            <td>⚠ 루트에 파일 몰림</td>
+            <td>⚠ 루트에 파일 몰림</td>
+          </tr>
+          <tr>
+            <td class="col-label">기능 단위 구현</td>
+            <td>⚠ 파일 크기 커짐</td>
+            <td>✅ 컴포넌트 분리 잘 됨</td>
+            <td>✅ 빠른 구현</td>
+          </tr>
+          <tr>
+            <td class="col-label">빠른 프로토타이핑</td>
+            <td>보통 (537초)</td>
+            <td>보통</td>
+            <td>✅ 가장 빠름 (318초)</td>
+          </tr>
+          <tr>
+            <td class="col-label">코드 리뷰 · 개선 요청</td>
+            <td>✅ 설명이 가장 자세함</td>
+            <td>보통</td>
+            <td>보통</td>
+          </tr>
+          <tr>
+            <td class="col-label">APK 빌드 자동화</td>
+            <td>❌ gradlew(빌드 실행 스크립트) 미생성</td>
+            <td>✅ assembleDebug(디버그 APK 자동 생성) 자동</td>
+            <td>⚠ 수동 보완 필요</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="sec-h3" style="margin-top:24px;"><span class="sec-num">팀 규모별</span> 도입 방식</div>
+    <div class="team-grid">
+      <div class="team-card">
+        <div class="team-card-title">소규모 팀 (1–3명)</div>
+        <div class="team-list">
+          <span class="team-item">CLAUDE.md에 컨벤션 최소 5개 작성 후 시작</span>
+          <span class="team-item">생성 후 diff 확인 습관 — Before/After 비교</span>
+          <span class="team-item">체크리스트 통과 시 바로 머지 가능</span>
+          <span class="team-item">Claude로 뼈대, Gemini로 빠른 기능 구현</span>
+        </div>
+      </div>
+      <div class="team-card">
+        <div class="team-card-title">중규모 팀 (4–10명)</div>
+        <div class="team-list">
+          <span class="team-item">AI 생성 코드 전용 PR 리뷰 체크리스트 추가</span>
+          <span class="team-item">AI 코드 리뷰 담당자 1명 지정 (로테이션)</span>
+          <span class="team-item">단위 테스트 1개 이상 작성 후 머지</span>
+          <span class="team-item">주 1회 AI anti-pattern 팀 공유</span>
+        </div>
+      </div>
+      <div class="team-card">
+        <div class="team-card-title">보안 중요 프로젝트</div>
+        <div class="team-list">
+          <span class="team-item">AI 생성 코드와 수동 코드 PR 라벨로 구분</span>
+          <span class="team-item">auth, payment 레이어는 보안 담당자 승인 필수</span>
+          <span class="team-item">API key, PII 파일은 AI 컨텍스트에서 제외</span>
+          <span class="team-item">허용 AI 도구 목록 사내 문서로 관리</span>
+        </div>
+      </div>
+      <div class="team-card">
+        <div class="team-card-title">공통 — 어느 팀이든 필수</div>
+        <div class="team-list">
+          <span class="team-item">빌드 성공만으로 머지 금지 — 반드시 실행 확인</span>
+          <span class="team-item">AI가 삭제한 코드 반드시 확인</span>
+          <span class="team-item">build.gradle 의존성 버전 검토</span>
+          <span class="team-item">CLAUDE.md는 git에 커밋해 팀 전체 공유</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── S5 ── -->
+  <section class="card" id="s5">
+    <div class="sh"><span class="sh-num">05</span><h2>코드 리뷰 체크리스트 — 커밋 전 11개 항목</h2></div>
+    <p class="lead">이번 실험에서 실제로 발견된 문제를 기반으로 작성했습니다. 발견 위치를 함께 기록해 어떤 AI가 어디서 놓쳤는지 확인할 수 있습니다.</p>
+
+    <div class="rule-list">
+      <div class="rule-item">
+        <div class="rule-num">1</div>
+        <div class="rule-body">
+          <div class="rule-title">StateFlow 업데이트는 .update {} 사용</div>
+          <div class="rule-desc"><code>_uiState.value = _uiState.value.copy(...)</code>는 비동기 환경에서 race condition(두 작업이 동시에 같은 값을 읽고 쓸 때 나중 결과가 앞 결과를 덮어씌우는 버그)을 일으킬 수 있습니다. <code>_uiState.update { it.copy(...) }</code>로 교체하세요.</div>
+          <div class="rule-source">발견: Claude WeatherViewModel.kt — selectCity(), toggleFavorite(), refresh() 전체</div>
+        </div>
+      </div>
+      <div class="rule-item">
+        <div class="rule-num">2</div>
+        <div class="rule-body">
+          <div class="rule-title">collectAsStateWithLifecycle() 사용 확인</div>
+          <div class="rule-desc"><code>collectAsState()</code>는 앱이 백그라운드에 있을 때도 Flow(데이터 스트림)를 수집해 불필요한 리소스 낭비와 리컴포지션(화면 재렌더링)을 일으킵니다. <code>collectAsStateWithLifecycle()</code>은 앱이 포그라운드일 때만 수집합니다.</div>
+          <div class="rule-source">발견: Gemini WeatherScreen.kt — val uiState by viewModel.uiState.collectAsState()</div>
+        </div>
+      </div>
+      <div class="rule-item">
+        <div class="rule-num">3</div>
+        <div class="rule-body">
+          <div class="rule-title">Composable 파라미터에 ViewModel 직접 주입 금지</div>
+          <div class="rule-desc">ViewModel을 파라미터로 받으면 @Preview 사용이 불가능하고 단위 테스트가 어렵습니다. UiState + 콜백 파라미터 방식을 사용하세요.</div>
+          <div class="rule-source">발견: Claude / Gemini WeatherScreen.kt — fun WeatherScreen(viewModel: WeatherViewModel)</div>
+        </div>
+      </div>
+      <div class="rule-item">
+        <div class="rule-num">4</div>
+        <div class="rule-body">
+          <div class="rule-title">내부 Composable에 private 선언</div>
+          <div class="rule-desc">파일 외부에서 사용하지 않는 Composable은 <code>private</code>을 붙이세요. 노출 범위를 좁혀 리팩토링이 쉬워집니다.</div>
+          <div class="rule-source">발견: Claude / Gemini WeatherScreen.kt — CitySelector, WeatherCard, ForecastItem 등</div>
+        </div>
+      </div>
+      <div class="rule-item">
+        <div class="rule-num">5</div>
+        <div class="rule-body">
+          <div class="rule-title">Composable 내부 데이터 하드코딩 금지</div>
+          <div class="rule-desc">도시 목록 등 데이터가 Composable 함수 내부에 리터럴로 있으면 UiState로 이동해야 합니다. Composable은 그리는 역할만 해야 합니다.</div>
+          <div class="rule-source">발견: Gemini WeatherScreen.kt — val cities = listOf("서울", "부산", "제주")</div>
+        </div>
+      </div>
+      <div class="rule-item">
+        <div class="rule-num">6</div>
+        <div class="rule-body">
+          <div class="rule-title">statusBarsPadding() / WindowInsets 사용</div>
+          <div class="rule-desc">상태바 높이를 dp로 하드코딩하면 기기마다 레이아웃이 깨집니다. <code>statusBarsPadding()</code> 또는 <code>WindowInsets.statusBars</code>를 사용하세요.</div>
+          <div class="rule-source">발견: Gemini WeatherScreen.kt — .padding(top = 48.dp)</div>
+        </div>
+      </div>
+      <div class="rule-item">
+        <div class="rule-num">7</div>
+        <div class="rule-body">
+          <div class="rule-title">Theme / ColorScheme 위치 확인</div>
+          <div class="rule-desc"><code>darkColorScheme()</code>, <code>MaterialTheme()</code>(앱 전체 색상·폰트·모양을 정의하는 디자인 시스템 컴포넌트) 정의는 <code>ui/theme/Theme.kt</code>에만 있어야 합니다. 화면 파일 안에 넣으면 다른 화면에서 재사용이 불가능합니다.</div>
+          <div class="rule-source">발견: Codex WeatherScreen.kt — private val AppColorScheme = darkColorScheme(...)</div>
+        </div>
+      </div>
+      <div class="rule-item">
+        <div class="rule-num">8</div>
+        <div class="rule-body">
+          <div class="rule-title">유틸 함수의 레이어 위치 확인</div>
+          <div class="rule-desc">날씨 조건 → 이모지, 조건 → 색상 같은 순수 변환 함수는 UI 파일이 아닌 data 레이어에 있어야 합니다.</div>
+          <div class="rule-source">발견: Claude WeatherScreen.kt — top-level fun conditionEmoji(), conditionGradient()</div>
+        </div>
+      </div>
+      <div class="rule-item">
+        <div class="rule-num">9</div>
+        <div class="rule-body">
+          <div class="rule-title">인덱스 접근 전 경계값 검사</div>
+          <div class="rule-desc">리스트를 인덱스로 접근하는 함수에는 <code>if (index in list.indices)</code> 검사를 추가하세요. AI는 종종 이 검사를 생략합니다.</div>
+          <div class="rule-source">모범: Codex selectCity() — if (index in uiState.weatherList.indices)</div>
+        </div>
+      </div>
+      <div class="rule-item">
+        <div class="rule-num">10</div>
+        <div class="rule-body">
+          <div class="rule-title">와일드카드 import 제거</div>
+          <div class="rule-desc"><code>import androidx.compose.material3.*</code> 형태는 어떤 심볼이 실제로 쓰이는지 알 수 없습니다. 명시적 import로 교체하세요.</div>
+          <div class="rule-source">발견: Gemini WeatherScreen.kt — import androidx.compose.foundation.layout.* 등 다수</div>
+        </div>
+      </div>
+      <div class="rule-item">
+        <div class="rule-num">11</div>
+        <div class="rule-body">
+          <div class="rule-title">LazyColumn / LazyRow 사용 여부</div>
+          <div class="rule-desc">아이템 수가 고정되어 있어도 <code>Column + forEach</code>(모든 항목을 한 번에 그림) 대신 <code>LazyColumn</code>(화면에 보이는 것만 그림)을 사용하는 것이 안전합니다. 나중에 서버 데이터로 교체할 때 성능 문제가 없습니다.</div>
+          <div class="rule-source">발견: Claude / Codex — 5일 예보를 Column + forEach로 렌더링</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── S6 ── -->
+  <section class="card" id="s6">
+    <div class="sh"><span class="sh-num">06</span><h2>결론</h2></div>
+
+    <div class="verdict-row">
+      <div class="verdict-main">
+        <h3 class="verdict-title">AI가 만든 코드를 그대로 쓰면 안 된다. 하지만 규칙을 주면 달라진다.</h3>
+        <p class="verdict-copy">세 AI 모두 동일한 스펙을 받았지만 코드 품질이 각각 달랐습니다. 어떤 AI도 처음부터 모든 규칙을 완벽히 따르지 않았습니다. 반대로 말하면 — 규칙을 명시하면 어느 AI도 팀 컨벤션에 맞는 코드를 만들어낼 수 있습니다. CLAUDE.md 같은 규칙 파일 하나가 매 PR 리뷰 시간을 줄여줍니다.</p>
+      </div>
+      <div class="verdict-aside">
+        <div class="aside-k">핵심 결론</div>
+        <div class="aside-v">규칙을<br>먼저 써라</div>
+      </div>
+    </div>
+
+    <div class="callout-grid" style="margin-top:18px;">
+      <div class="callout">
+        <div class="callout-k"><span class="dot claude" style="margin-right:5px;"></span>Claude를 쓴다면</div>
+        <div class="callout-v">폴더 구조 설계에 강함. 생성 후 WeatherScreen.kt 분리, private 추가, .update{} 교체 세 가지 후처리 필수.</div>
+      </div>
+      <div class="callout">
+        <div class="callout-k"><span class="dot codex" style="margin-right:5px;"></span>Codex를 쓴다면</div>
+        <div class="callout-v">컴포넌트 코드 품질 1위. Data/ViewModel 파일 위치 재조정, Theme 파일 분리 후처리 필요.</div>
+      </div>
+      <div class="callout">
+        <div class="callout-k"><span class="dot gemini" style="margin-right:5px;"></span>Gemini를 쓴다면</div>
+        <div class="callout-v">가장 빠른 프로토타이핑. collectAsState() 교체와 하드코딩 제거가 생성 직후 필수.</div>
+      </div>
+    </div>
+
+    <p class="lead" style="margin-top:20px;color:#999;font-size:12.5px;">분석 기반: WeatherNow Android 앱 V1 실험 (2026-05-28) · Claude Code CLI v2.1.152 · OpenAI Codex CLI v0.134.0 · Gemini CLI v0.43.0</p>
+  </section>
+
+  <footer class="rf">
+    <a href="index.html">← 전체 요약</a>
+    <a href="report_tips.html">더 잘 쓰는 방법 →</a>
+  </footer>
+
+</div>
+</body>
+</html>

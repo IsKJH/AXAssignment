@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>WeatherNow 인간 vs AI 비교</title>
+<link rel="stylesheet" href="report_common.css?v=20260601">
+<style>
+:root { --human: #5B21B6; }
+.dot.human { background: var(--human); }
+.th-human  { border-top: 2px solid var(--human); }
+.human-pill { background: var(--bg, #F6F6F6); border-color: var(--border, #E8E8E8); color: var(--human); }
+
+.phase-status {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; font-weight: 700; letter-spacing: .4px;
+  padding: 3px 9px; border-radius: 4px;
+}
+.phase-status.done { background: #F0FDF4; color: #166534; border: 1px solid #BBF7D0; }
+.phase-status.todo { background: var(--bg, #F6F6F6); color: var(--text3, #888); border: 1px solid var(--border, #E8E8E8); }
+
+.time-cmp { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin: 14px 0; }
+.time-box {
+  border: 1px solid var(--border, #E8E8E8);
+  border-radius: 6px;
+  padding: 14px 16px;
+  background: var(--surface, #fff);
+  position: relative;
+}
+.time-box.highlight { border-left: 3px solid var(--human); }
+.time-ai  { font-size: 11px; font-weight: 600; letter-spacing: .4px; color: var(--text3, #888); margin-bottom: 4px; }
+.time-val { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; color: var(--text, #111); letter-spacing: -.5px; line-height: 1.1; }
+.time-sub { font-size: 11.5px; color: var(--text3, #888); margin-top: 3px; }
+.time-badge {
+  position: absolute; top: 9px; right: 9px;
+  font-size: 10px; font-weight: 700; letter-spacing: .4px;
+  background: var(--text, #111); color: #fff;
+  padding: 2px 6px; border-radius: 3px;
+}
+
+.diff-bar-wrap { margin: 16px 0 6px; }
+.diff-bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 9px; }
+.diff-bar-label { font-size: 13px; font-weight: 600; color: var(--text2, #444); width: 120px; flex-shrink: 0; }
+.diff-bar-track { flex: 1; height: 6px; background: var(--bg, #F6F6F6); border-radius: 2px; overflow: hidden; border: 1px solid var(--border, #E8E8E8); }
+.diff-bar-fill  { height: 100%; border-radius: 2px; }
+.diff-bar-fill.human  { background: var(--human); }
+.diff-bar-fill.claude { background: #C2622A; }
+.diff-bar-fill.gemini { background: #1A4FDB; }
+.diff-bar-fill.codex  { background: #0B8A5E; }
+.diff-bar-num  { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; color: var(--text, #111); width: 72px; text-align: right; flex-shrink: 0; }
+
+.arch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+.arch-card { border: 1px solid var(--border, #E8E8E8); border-radius: 6px; overflow: hidden; }
+.arch-head { padding: 10px 15px; background: var(--bg, #F6F6F6); border-bottom: 1px solid var(--border, #E8E8E8); font-weight: 700; font-size: 13.5px; display: flex; align-items: center; gap: 8px; }
+.arch-body { padding: 13px 15px; font-size: 13.5px; color: var(--text2, #444); line-height: 1.75; }
+.arch-body ul { margin-left: 16px; }
+.arch-body li { margin-bottom: 3px; }
+
+.pending-card {
+  border: 1px dashed var(--border2, #CCC);
+  border-radius: 6px;
+  padding: 28px 24px;
+  background: var(--bg, #F6F6F6);
+  text-align: center;
+  color: var(--text3, #888);
+}
+.pending-card .pc-icon { font-size: 26px; margin-bottom: 8px; }
+.pending-card .pc-title { font-size: 14.5px; font-weight: 700; color: var(--text2, #444); margin-bottom: 5px; }
+.pending-card .pc-desc  { font-size: 13px; line-height: 1.65; }
+
+.insight-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 12px; }
+.insight { border: 1px solid var(--border, #E8E8E8); border-radius: 6px; padding: 14px 15px; background: var(--surface, #fff); }
+.insight.purple { border-left: 3px solid var(--human); }
+.insight.orange { border-left: 3px solid #C2622A; }
+.insight.blue   { border-left: 3px solid #1A4FDB; }
+.insight-k { font-size: 12px; font-weight: 700; color: var(--text, #111); margin-bottom: 4px; }
+.insight-v { font-size: 13.5px; line-height: 1.7; color: var(--text2, #444); }
+
+.file-tree {
+  background: #1C1C1C; color: #D4D4D4;
+  border-radius: 4px; padding: 14px 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px; line-height: 1.8;
+  margin: 10px 0;
+}
+.file-tree .dir  { color: #93C5FD; }
+.file-tree .file { color: #86EFAC; }
+.file-tree .note { color: #555; font-size: 11.5px; }
+
+@media (max-width: 760px) {
+  .time-cmp { grid-template-columns: 1fr 1fr; }
+  .arch-grid { grid-template-columns: 1fr; }
+  .insight-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body id="top">
+<div class="wrap">
+
+  <header class="rh">
+    <h1 class="rh-title">WeatherNow 손 코딩 vs AI 생성 — 시간 비교 실험</h1>
+    <p class="rh-sub">동일한 날씨 앱 명세를 AI CLI(명령줄 인터페이스, Kotlin/Compose)로 만든 결과와 직접 Flutter/Dart로 손 코딩한 결과를 속도·코드량·구조 기준으로 비교합니다. AI보다 14.4배 느렸지만, <strong>AI 도구들이 7번째 단계(V7)에서야 도달한 아키텍처 패턴을 첫 버전부터 적용했습니다.</strong></p>
+    <div class="rh-meta">
+      <span class="ai-pill human-pill"><span class="dot human"></span>Human · Flutter</span>
+      <span class="ai-pill"><span class="dot claude"></span>Claude · Kotlin</span>
+      <span class="ai-pill"><span class="dot codex"></span>Codex · Kotlin</span>
+      <span class="ai-pill"><span class="dot gemini"></span>Gemini · Kotlin</span>
+      <span class="tag-sm">Flutter/Dart · Clean Architecture</span>
+      <span class="tag-sm">Riverpod · Freezed</span>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <a href="index.html">← 전체 요약</a>
+    <a href="#overview">실험 개요</a>
+    <a href="#v1">V1 결과</a>
+    <a href="#structure">코드 구조</a>
+    <a href="#v2">V2</a>
+    <a href="#v3">V3</a>
+    <a href="#conclusion">종합</a>
+  </nav>
+
+  <!-- ── 실험 개요 ── -->
+  <section class="card" id="overview">
+    <div class="sh"><span class="sh-num">01</span><h2>실험 개요</h2></div>
+    <p class="lead">같은 날씨 앱 명세를 AI는 Android Kotlin/Compose MVVM(Model-View-ViewModel — 화면·로직 분리 아키텍처 패턴)으로, 직접 구현은 Flutter/Dart Clean Architecture로 진행합니다. 언어와 아키텍처는 다르지만, 구현 기능과 화면 명세는 동일합니다.</p>
+    <div class="callout-grid">
+      <div class="callout">
+        <div class="callout-k">비교 초점</div>
+        <div class="callout-v">각 단계를 완성하는 데 실제로 걸리는 시간 — AI 생성 시간과 손 코딩 시간을 단계별로 누적 비교합니다.</div>
+      </div>
+      <div class="callout">
+        <div class="callout-k">언어 차이 참고</div>
+        <div class="callout-v">Flutter는 프로젝트 세팅(pubspec, build_runner)이 Android보다 약간 더 걸립니다. 단순 숫자 비교 시 이 점을 감안해야 합니다.</div>
+      </div>
+      <div class="callout">
+        <div class="callout-k">단계 구성</div>
+        <div class="callout-v">V1(기본 날씨) → V2(시간별 예보·즐겨찾기·새로고침) → V3(자유 스마트 기능 1개) 3단계로 진행합니다.</div>
+      </div>
+    </div>
+    <div class="metric-grid" style="margin-top:18px;">
+      <div class="metric">
+        <div class="metric-k">진행 상태</div>
+        <div class="metric-v">V1·V2·V3 완료</div>
+      </div>
+      <div class="metric">
+        <div class="metric-k">누적 구현 시간</div>
+        <div class="metric-v">2시간 36분 12초</div>
+      </div>
+      <div class="metric">
+        <div class="metric-k">작성 코드</div>
+        <div class="metric-v">12파일 · 1,010줄</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── V1 결과 ── -->
+  <section class="card" id="v1">
+    <div class="sh">
+      <span class="sh-num">02</span>
+      <h2>V1 — 기본 날씨 앱</h2>
+      <span class="phase-status done" style="margin-left:auto;">완료</span>
+    </div>
+    <p class="lead">도시 전환(서울·부산·제주), 현재 날씨, 5일 예보를 구현하는 V1 명세 기준입니다.</p>
+
+    <h3 style="font-size:14px;font-weight:800;color:var(--text2);margin:20px 0 10px;">소요 시간 비교</h3>
+    <div class="time-cmp">
+      <div class="time-box highlight">
+        <div class="time-ai"><span class="dot human" style="display:inline-block;margin-right:5px;"></span>Human · Flutter</div>
+        <div class="time-val">1:06:24</div>
+        <div class="time-sub">3,984초 · Clean Arch</div>
+      </div>
+      <div class="time-box">
+        <div class="time-ai"><span class="dot claude" style="display:inline-block;margin-right:5px;"></span>Claude · Kotlin</div>
+        <div class="time-val">537초</div>
+        <div class="time-sub">8분 57초 · MVVM</div>
+      </div>
+      <div class="time-box">
+        <div class="time-ai"><span class="dot gemini" style="display:inline-block;margin-right:5px;"></span>Gemini · Kotlin</div>
+        <div class="time-val">318초</div>
+        <div class="time-sub">5분 18초 · MVVM</div>
+        <div class="time-badge">최단</div>
+      </div>
+      <div class="time-box">
+        <div class="time-ai"><span class="dot codex" style="display:inline-block;margin-right:5px;"></span>Codex · Kotlin</div>
+        <div class="time-val">—</div>
+        <div class="time-sub">V1 실행 환경 차이로 미기록 · V2는 315초</div>
+      </div>
+    </div>
+
+    <h3 style="font-size:14px;font-weight:800;color:var(--text2);margin:20px 0 10px;">구현 시간 배율 (Gemini 기준)</h3>
+    <div class="diff-bar-wrap">
+      <div class="diff-bar-row">
+        <span class="diff-bar-label"><span class="dot human" style="display:inline-block;margin-right:5px;"></span>Human</span>
+        <div class="diff-bar-track"><div class="diff-bar-fill human" style="width:100%"></div></div>
+        <span class="diff-bar-num">×12.5배</span>
+      </div>
+      <div class="diff-bar-row">
+        <span class="diff-bar-label"><span class="dot claude" style="display:inline-block;margin-right:5px;"></span>Claude</span>
+        <div class="diff-bar-track"><div class="diff-bar-fill claude" style="width:13.5%"></div></div>
+        <span class="diff-bar-num">×1.7배</span>
+      </div>
+      <div class="diff-bar-row">
+        <span class="diff-bar-label"><span class="dot gemini" style="display:inline-block;margin-right:5px;"></span>Gemini</span>
+        <div class="diff-bar-track"><div class="diff-bar-fill gemini" style="width:8%"></div></div>
+        <span class="diff-bar-num">×1.0 기준</span>
+      </div>
+    </div>
+    <div class="note-box">언어 차이 고려: Flutter는 Android보다 초기 세팅(pubspec.yaml, build_runner 설정, Riverpod 세팅)에 약 10~15분이 추가됩니다. 순수 화면 구현만 따지면 실제 차이는 약 ×10 수준으로 추정됩니다. Codex V1은 실행 환경 차이로 V1 시간이 기록되지 않았습니다(전체 실험 대시보드의 측정 시간과 다를 수 있음).</div>
+
+    <h3 style="font-size:14px;font-weight:800;color:var(--text2);margin:20px 0 10px;">코드량 비교</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>항목</th>
+            <th class="th-human">Human · Flutter</th>
+            <th class="th-claude">Claude · Kotlin</th>
+            <th class="th-gemini">Gemini · Kotlin</th>
+            <th class="th-codex">Codex · Kotlin</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-label">언어 / UI</td>
+            <td>Dart / Flutter</td>
+            <td>Kotlin / Compose(안드로이드 선언형 UI 프레임워크)</td>
+            <td>Kotlin / Compose</td>
+            <td>Kotlin / Compose</td>
+          </tr>
+          <tr>
+            <td class="col-label">아키텍처</td>
+            <td>Clean Architecture</td>
+            <td>MVVM</td>
+            <td>MVVM</td>
+            <td>MVVM</td>
+          </tr>
+          <tr>
+            <td class="col-label">상태관리</td>
+            <td>Riverpod</td>
+            <td>StateFlow(상태 변화를 구독자에게 흘려보내는 코루틴 기반 스트림)</td>
+            <td>StateFlow</td>
+            <td>StateFlow</td>
+          </tr>
+          <tr>
+            <td class="col-label">파일 수</td>
+            <td>9개</td>
+            <td>5개</td>
+            <td>5개</td>
+            <td>6개</td>
+          </tr>
+          <tr>
+            <td class="col-label">총 코드 줄 수</td>
+            <td>450줄</td>
+            <td>395줄</td>
+            <td>304줄</td>
+            <td>451줄</td>
+          </tr>
+          <tr>
+            <td class="col-label">메인 UI 파일</td>
+            <td>weather_screen.dart<br><span style="color:#9CA3AF;font-size:12px;">296줄</span></td>
+            <td>WeatherScreen.kt<br><span style="color:#9CA3AF;font-size:12px;">340줄</span></td>
+            <td>WeatherScreen.kt</td>
+            <td>WeatherScreen.kt</td>
+          </tr>
+          <tr class="row-hl">
+            <td class="col-label">소요 시간</td>
+            <td><strong>3,984초</strong></td>
+            <td>537초</td>
+            <td><strong>318초 ✓ 최단</strong></td>
+            <td>측정 불가</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── 코드 구조 비교 ── -->
+  <section class="card" id="structure">
+    <div class="sh"><span class="sh-num">03</span><h2>코드 구조 비교</h2></div>
+
+    <div class="arch-grid">
+      <div class="arch-card">
+        <div class="arch-head"><span class="dot human"></span>Human · Flutter Clean Architecture</div>
+        <div class="arch-body">
+          <div class="file-tree">
+<span class="dir">lib/</span>
+  <span class="dir">core/utils/</span>
+    <span class="file">weather_icon.dart</span>          <span class="note">16줄</span>
+  <span class="dir">features/</span>
+    <span class="dir">data/</span>
+      <span class="dir">datasources/</span>
+        <span class="file">weather_local_datasource.dart</span> <span class="note">54줄</span>
+      <span class="dir">repositories/</span>
+        <span class="file">weather_repositories_impl.dart</span> <span class="note">14줄</span>
+    <span class="dir">domain/</span>
+      <span class="dir">entities/</span>
+        <span class="file">weather.dart</span>               <span class="note">21줄</span>
+        <span class="file">forecast_day.dart</span>          <span class="note">12줄</span>
+      <span class="dir">repositories/</span>
+        <span class="file">weather_repository.dart</span>    <span class="note">5줄</span>
+    <span class="dir">presentation/</span>
+      <span class="file">weather_provider.dart</span>       <span class="note">11줄</span>
+      <span class="file">weather_screen.dart</span>        <span class="note">296줄</span>
+  <span class="file">main.dart</span>                         <span class="note">21줄</span></div>
+          <ul>
+            <li>도메인 레이어: 엔티티 + 리포지토리(Repository — 데이터 출처를 추상화하는 계층) 인터페이스 분리</li>
+            <li>데이터 레이어: datasource + 구현체 분리</li>
+            <li>Riverpod Provider로 의존성 주입</li>
+            <li>Freezed 사용 (불변 데이터 클래스)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="arch-card">
+        <div class="arch-head"><span class="dot claude"></span>AI (Claude 예시) · Android MVVM</div>
+        <div class="arch-body">
+          <div class="file-tree">
+<span class="dir">java/com/example/weathernow/</span>
+  <span class="file">MainActivity.kt</span>
+  <span class="file">WeatherData.kt</span>
+  <span class="file">WeatherViewModel.kt</span>
+  <span class="dir">ui/</span>
+    <span class="file">WeatherScreen.kt</span>         <span class="note">340줄</span>
+    <span class="dir">components/</span>
+      <span class="file">...composables</span></div>
+          <ul>
+            <li>MVVM: ViewModel(화면 로직을 담당하는 클래스, UI와 데이터 로직을 분리함) + UiState + Composable 직결</li>
+            <li>StateFlow로 단방향 데이터 흐름</li>
+            <li>별도 의존성 없음 (표준 Compose만)</li>
+            <li>구조는 단순, 코드가 적고 빠르게 생성 가능</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="insight-grid">
+      <div class="insight purple">
+        <div class="insight-k">Human 선택: Clean Architecture</div>
+        <div class="insight-v">도메인/데이터/프레젠테이션 레이어 분리. 규모가 커질 때 유지보수 유리하지만 초기 보일러플레이트가 많아 V1 구현 시간이 늘어났습니다.</div>
+      </div>
+      <div class="insight orange">
+        <div class="insight-k">AI 선택: MVVM</div>
+        <div class="insight-v">명세에서 MVVM을 명시적으로 요구했기 때문에 AI는 보일러플레이트 없이 핵심 기능만 빠르게 구현했습니다. 파일이 적고 코드량도 적습니다.</div>
+      </div>
+      <div class="insight blue">
+        <div class="insight-k">시간 차이의 주요 원인</div>
+        <div class="insight-v">① 프레임워크 전환(Flutter 세팅) ② 아키텍처 레이어 설계 시간 ③ 타이핑 속도 vs AI 출력 속도. AI는 3가지 모두 없거나 매우 짧습니다.</div>
+      </div>
+    </div>
+
+    <!-- 이 코드가 증명하는 것 -->
+    <div style="margin-top:20px;padding-top:18px;border-top:1px solid var(--border,#E8E8E8)">
+      <h3 style="font-size:14px;font-weight:800;color:var(--text2);margin:0 0 10px;">이 코드가 증명하는 것 — AI가 도달하는 데 7단계가 필요했던 설계를 첫 버전에서 적용</h3>
+      <div class="insight-grid">
+        <div class="insight purple">
+          <div class="insight-k">V7 패턴을 V1에서 적용</div>
+          <div class="insight-v">이 실험에서 <strong>Codex가 V7(9단계 중 7번째 단계)에서 독립적으로 발견한 Repository 인터페이스(DIP — 의존성 역전 원칙) 패턴</strong>을 직접 구현 코드는 첫 버전부터 적용했습니다. <code>abstract interface class WeatherRepository</code>가 domain 레이어에 위치하고, 구현체(<code>WeatherRepositoriesImpl</code>)와 완전히 분리됩니다.</div>
+        </div>
+        <div class="insight orange">
+          <div class="insight-k">1,010줄 직접 작성 — AI 없이</div>
+          <div class="insight-v">Flutter, Dart, Riverpod, Freezed, Clean Architecture를 실제로 알고 쓸 수 있음을 증명합니다. AI 도구에만 의존하는 것이 아니라, 코드를 스스로 설계하고 작성하는 능력을 갖추고 있습니다.</div>
+        </div>
+        <div class="insight blue">
+          <div class="insight-k">현대적 Flutter 스택</div>
+          <div class="insight-v">AI 도구들이 선택한 ViewModel/StateFlow 대신 <strong>Riverpod Provider(Flutter 공식 권장 상태관리 라이브러리) + Freezed 불변 엔티티</strong> 스택을 적용했습니다. Flutter 생태계의 현대적 패턴을 알고 있다는 신호입니다.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── V2 결과 ── -->
+  <section class="card" id="v2">
+    <div class="sh">
+      <span class="sh-num">04</span>
+      <h2>V2 — 기능 확장</h2>
+      <span class="phase-status done" style="margin-left:auto;">완료</span>
+    </div>
+    <p class="lead">시간별 예보, 강수확률·UV·대기질, 새로고침, 즐겨찾기를 추가하는 V2 명세 기준입니다.</p>
+
+    <h3 style="font-size:14px;font-weight:700;color:var(--text2,#555);margin:20px 0 10px;">소요 시간 비교</h3>
+    <div class="time-cmp">
+      <div class="time-box highlight">
+        <div class="time-ai"><span class="dot human" style="display:inline-block;margin-right:5px;"></span>Human · Flutter</div>
+        <div class="time-val">53:51</div>
+        <div class="time-sub">3,231초 · 기능 추가</div>
+      </div>
+      <div class="time-box">
+        <div class="time-ai"><span class="dot claude" style="display:inline-block;margin-right:5px;"></span>Claude · Kotlin</div>
+        <div class="time-val">360.6초</div>
+        <div class="time-sub">6분 1초</div>
+      </div>
+      <div class="time-box">
+        <div class="time-ai"><span class="dot gemini" style="display:inline-block;margin-right:5px;"></span>Gemini · Kotlin</div>
+        <div class="time-val">149.4초</div>
+        <div class="time-sub">2분 29초</div>
+        <div class="time-badge">최단</div>
+      </div>
+      <div class="time-box">
+        <div class="time-ai"><span class="dot codex" style="display:inline-block;margin-right:5px;"></span>Codex · Kotlin</div>
+        <div class="time-val">315초</div>
+        <div class="time-sub">5분 15초</div>
+      </div>
+    </div>
+
+    <h3 style="font-size:14px;font-weight:700;color:var(--text2,#555);margin:20px 0 10px;">구현 시간 배율 (Gemini 기준)</h3>
+    <div class="diff-bar-wrap">
+      <div class="diff-bar-row">
+        <span class="diff-bar-label"><span class="dot human" style="display:inline-block;margin-right:5px;"></span>Human</span>
+        <div class="diff-bar-track"><div class="diff-bar-fill human" style="width:100%"></div></div>
+        <span class="diff-bar-num">×21.6배</span>
+      </div>
+      <div class="diff-bar-row">
+        <span class="diff-bar-label"><span class="dot codex" style="display:inline-block;margin-right:5px;"></span>Codex</span>
+        <div class="diff-bar-track"><div class="diff-bar-fill codex" style="width:9.8%"></div></div>
+        <span class="diff-bar-num">×2.1배</span>
+      </div>
+      <div class="diff-bar-row">
+        <span class="diff-bar-label"><span class="dot claude" style="display:inline-block;margin-right:5px;"></span>Claude</span>
+        <div class="diff-bar-track"><div class="diff-bar-fill claude" style="width:11.2%"></div></div>
+        <span class="diff-bar-num">×2.4배</span>
+      </div>
+      <div class="diff-bar-row">
+        <span class="diff-bar-label"><span class="dot gemini" style="display:inline-block;margin-right:5px;"></span>Gemini</span>
+        <div class="diff-bar-track"><div class="diff-bar-fill gemini" style="width:4.6%"></div></div>
+        <span class="diff-bar-num">×1.0 기준</span>
+      </div>
+    </div>
+    <div class="note-box">V1(×12.5 — 1단계 기준)보다 V2(×21.6 — 2단계 기준) 배율이 더 커졌습니다. AI는 기존 코드를 캐시로 활용해 V2에서 오히려 더 빨라졌지만(Gemini 318초→149초), 사람은 기존 코드를 파악하고 추가 기능을 구현하는 시간이 여전히 필요했기 때문입니다.</div>
+
+    <h3 style="font-size:14px;font-weight:700;color:var(--text2,#555);margin:20px 0 10px;">V2 코드량 비교</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>항목</th>
+            <th class="th-human">Human · Flutter</th>
+            <th class="th-claude">Claude · Kotlin</th>
+            <th class="th-gemini">Gemini · Kotlin</th>
+            <th class="th-codex">Codex · Kotlin</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-label">파일 수</td>
+            <td>10개</td>
+            <td>5개</td>
+            <td>5개</td>
+            <td>6개</td>
+          </tr>
+          <tr>
+            <td class="col-label">총 코드 줄 수</td>
+            <td><strong>875줄</strong></td>
+            <td>580줄</td>
+            <td>518줄</td>
+            <td>736줄</td>
+          </tr>
+          <tr>
+            <td class="col-label">증가량 (V1 대비)</td>
+            <td>+425줄</td>
+            <td>+185줄</td>
+            <td>+214줄</td>
+            <td>+285줄</td>
+          </tr>
+          <tr class="row-hl">
+            <td class="col-label">소요 시간</td>
+            <td><strong>3,231초 (53:51)</strong></td>
+            <td>360.6초</td>
+            <td><strong>149.4초 ✓ 최단</strong></td>
+            <td>315초</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── V3 결과 ── -->
+  <section class="card" id="v3">
+    <div class="sh">
+      <span class="sh-num">05</span>
+      <h2>V3 — 자유 기능 추가</h2>
+      <span class="phase-status done" style="margin-left:auto;">완료</span>
+    </div>
+    <p class="lead">선택한 스마트 기능: <strong>"지금 나갈까?" 외출 어드바이저 카드</strong> — 날씨 위험도 점수 기반 이모지(😊/😐/😣) + 한 줄 조언 + 상황별 액션 칩.</p>
+
+    <h3 style="font-size:14px;font-weight:700;color:var(--text2,#555);margin:20px 0 10px;">소요 시간 비교</h3>
+    <div class="time-cmp">
+      <div class="time-box highlight">
+        <div class="time-ai"><span class="dot human" style="display:inline-block;margin-right:5px;"></span>Human · Flutter</div>
+        <div class="time-val">35:57</div>
+        <div class="time-sub">2,157초 · 외출 어드바이저</div>
+      </div>
+      <div class="time-box">
+        <div class="time-ai"><span class="dot claude" style="display:inline-block;margin-right:5px;"></span>Claude · Kotlin</div>
+        <div class="time-val">412.5초</div>
+        <div class="time-sub">시각적 날씨 UI 개선</div>
+      </div>
+      <div class="time-box">
+        <div class="time-ai"><span class="dot gemini" style="display:inline-block;margin-right:5px;"></span>Gemini · Kotlin</div>
+        <div class="time-val">185.2초</div>
+        <div class="time-sub">날씨 내러티브 인사이트 카드</div>
+        <div class="time-badge">최단</div>
+      </div>
+      <div class="time-box">
+        <div class="time-ai"><span class="dot codex" style="display:inline-block;margin-right:5px;"></span>Codex · Kotlin</div>
+        <div class="time-val">280초</div>
+        <div class="time-sub">코드 리팩터링 (-178줄)</div>
+      </div>
+    </div>
+
+    <h3 style="font-size:14px;font-weight:700;color:var(--text2,#555);margin:20px 0 10px;">구현 시간 배율 (Gemini 기준)</h3>
+    <div class="diff-bar-wrap">
+      <div class="diff-bar-row">
+        <span class="diff-bar-label"><span class="dot human" style="display:inline-block;margin-right:5px;"></span>Human</span>
+        <div class="diff-bar-track"><div class="diff-bar-fill human" style="width:100%"></div></div>
+        <span class="diff-bar-num">×11.6배</span>
+      </div>
+      <div class="diff-bar-row">
+        <span class="diff-bar-label"><span class="dot claude" style="display:inline-block;margin-right:5px;"></span>Claude</span>
+        <div class="diff-bar-track"><div class="diff-bar-fill claude" style="width:19.2%"></div></div>
+        <span class="diff-bar-num">×2.2배</span>
+      </div>
+      <div class="diff-bar-row">
+        <span class="diff-bar-label"><span class="dot codex" style="display:inline-block;margin-right:5px;"></span>Codex</span>
+        <div class="diff-bar-track"><div class="diff-bar-fill codex" style="width:13.0%"></div></div>
+        <span class="diff-bar-num">×1.5배</span>
+      </div>
+      <div class="diff-bar-row">
+        <span class="diff-bar-label"><span class="dot gemini" style="display:inline-block;margin-right:5px;"></span>Gemini</span>
+        <div class="diff-bar-track"><div class="diff-bar-fill gemini" style="width:8.6%"></div></div>
+        <span class="diff-bar-num">×1.0 기준</span>
+      </div>
+    </div>
+    <div class="note-box">V3는 V1(×12.5), V2(×21.6)보다 배율이 줄었습니다(×11.6). Clean Architecture 기반이 이미 갖춰진 상태에서 스마트 기능 로직만 추가했기 때문입니다.</div>
+
+    <h3 style="font-size:14px;font-weight:700;color:var(--text2,#555);margin:20px 0 10px;">V3 구현 내용</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>항목</th>
+            <th class="th-human">Human · Flutter</th>
+            <th class="th-gemini">AI 비교 (Gemini 예시)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-label">스마트 기능명</td>
+            <td>지금 나갈까? 외출 어드바이저</td>
+            <td>Weather Narrative Insight</td>
+          </tr>
+          <tr>
+            <td class="col-label">입력 요소</td>
+            <td>humidity, condition, precipitation, uvIndex, windSpeed, temp/feelsLike</td>
+            <td>condition, temp, humidity</td>
+          </tr>
+          <tr>
+            <td class="col-label">출력 UI</td>
+            <td>위험도 이모지(😊/😐/😣) + 한 줄 조언 + 액션 칩 3개</td>
+            <td>인사이트 카드 + 동적 배경</td>
+          </tr>
+          <tr>
+            <td class="col-label">신규 코드 위치</td>
+            <td>lib/core/utils/weather_icon.dart (weatherGradeIcon, weatherBriefMessage, weatherActionChips)</td>
+            <td>WeatherViewModel + WeatherScreen</td>
+          </tr>
+          <tr class="row-hl">
+            <td class="col-label">코드량 변화</td>
+            <td>12파일 · 1,010줄 (+135줄 from V2)</td>
+            <td>Gemini: 5파일 · 542줄 (+24줄)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── 종합 (전체 완료) ── -->
+  <section class="card" id="conclusion">
+    <div class="sh"><span class="sh-num">06</span><h2>종합 비교 — V1·V2·V3 완료</h2></div>
+
+    <div class="verdict-row">
+      <div class="verdict-main">
+        <h2 class="verdict-title">속도는 AI보다 14.4배 느렸지만, 아키텍처 수준은 AI가 V7에서야 따라잡은 설계를 V1에서 적용했습니다.</h2>
+        <p class="verdict-copy">V1·V2·V3 합계 9,372초(2시간 36분). AI(Gemini) 누적 652.6초 대비 ×14.4 차이입니다. 그러나 이 시간 안에 <strong>Clean Architecture + Repository 인터페이스 + Riverpod + Freezed</strong>를 조합한 1,010줄의 코드를 직접 설계하고 작성했습니다. AI 도구들은 이 수준의 아키텍처에 도달하는 데 7~9단계가 필요했습니다.</p>
+      </div>
+      <div class="verdict-aside">
+        <div class="aside-k">속도 차이</div>
+        <div class="aside-v">AI 대비<br>×14.4 느림</div>
+      </div>
+    </div>
+
+    <div class="tbl-wrap" style="margin-top:16px;">
+      <table>
+        <thead>
+          <tr>
+            <th>단계</th>
+            <th class="th-human">Human · Flutter</th>
+            <th class="th-gemini">Gemini (최단 AI)</th>
+            <th>배율</th>
+            <th>상태</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-label">V1</td>
+            <td><strong>3,984초 (1:06:24)</strong></td>
+            <td>318초</td>
+            <td>×12.5</td>
+            <td>✅ 완료</td>
+          </tr>
+          <tr>
+            <td class="col-label">V2</td>
+            <td><strong>3,231초 (53:51)</strong></td>
+            <td>149.4초</td>
+            <td>×21.6</td>
+            <td>✅ 완료</td>
+          </tr>
+          <tr>
+            <td class="col-label">V3</td>
+            <td><strong>2,157초 (35:57)</strong></td>
+            <td>185.2초</td>
+            <td>×11.6</td>
+            <td>✅ 완료</td>
+          </tr>
+          <tr class="row-hl">
+            <td class="col-label">누적 합계</td>
+            <td><strong>9,372초 (2:36:12)</strong></td>
+            <td>652.6초</td>
+            <td>×14.4</td>
+            <td>✅ 전체 완료</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="insight-grid" style="margin-top:16px;">
+      <div class="insight purple">
+        <div class="insight-k">단계별 배율 변화</div>
+        <div class="insight-v">×12.5 → ×21.6 → ×11.6. V2에서 가장 벌어졌다가 V3에서 좁혀졌습니다. Clean Architecture 기반이 갖춰진 상태에서 기능을 추가하는 작업은 상대적으로 빨랐습니다.</div>
+      </div>
+      <div class="insight orange">
+        <div class="insight-k">아키텍처 우위</div>
+        <div class="insight-v">AI 도구들이 7번째 단계(V7)에서야 도입한 Repository 인터페이스(DIP — 구현체가 아닌 추상 인터페이스에 의존하는 설계 원칙)를 Human은 V1에서 적용. AI 실험의 핵심 교훈인 "4단계 설계 결정이 5~8단계를 결정한다"를 Human은 처음부터 실천했습니다.</div>
+      </div>
+      <div class="insight blue">
+        <div class="insight-k">스마트 기능 구현</div>
+        <div class="insight-v">"지금 나갈까?" 어드바이저는 humidity·precipitation·uvIndex·windSpeed·temp·feelsLike 6개 요소로 위험도를 계산합니다. AI의 3개 요소보다 더 많은 입력을 처리했습니다.</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+  <footer class="rf">
+    <a href="index.html">← 전체 요약</a>
+    <a href="report_tips.html">더 잘 쓰는 방법 →</a>
+  </footer>
+
+</div>
+</body>
+</html>

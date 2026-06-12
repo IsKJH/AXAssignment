@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>WeatherNow V6 버그 디버깅 비교</title>
+<link rel="stylesheet" href="report_common.css?v=20260601">
+</head>
+<body id="top">
+<div class="wrap">
+
+  <header class="rh">
+    <h1 class="rh-title">V6 — 버그 디버깅</h1>
+    <p class="rh-sub">V4 코드에 로딩·상태·데이터 매핑 버그 5개를 심고 "찾아서 고쳐라"만 지시했습니다. 발견율은 전원 5/5로 동일했습니다. 그런데 접근법이 달랐습니다. Claude는 <code>git diff</code>(코드 변경 내용 확인 명령어)로 변경점을 먼저 확인했고, Gemini는 diff 없이 코드를 직독해 가장 빠르게 찾았으며, Codex는 단위 테스트를 직접 실행해 가장 철저히 검증했습니다.</p>
+    <div class="rh-meta">
+      <span class="ai-pill"><span class="dot claude"></span>Claude</span>
+      <span class="ai-pill"><span class="dot codex"></span>Codex</span>
+      <span class="ai-pill"><span class="dot gemini"></span>Gemini</span>
+      <span class="tag-sm">V4 코드 기반 · 버그 5개 포함</span>
+      <span class="tag-sm">2026-06-01</span>
+    </div>
+    <div class="rh-tldr">
+      <div><div class="rh-tldr-label">이 단계에서 한 것</div><div class="rh-tldr-val">V4 코드에 동일한 버그 5개를 심고 "찾아서 고쳐라"만 지시</div></div>
+      <div><div class="rh-tldr-label">핵심 차이점</div><div class="rh-tldr-val">발견율은 전원 5/5로 동일 — 버그 찾기 능력 자체는 차이 없음. 차이는 검증 방식: Codex는 단위 테스트 직접 실행(가장 견고), Gemini는 JAVA_HOME 오류로 빌드 검증 불가(빌드 도구가 Java를 찾지 못한 환경 문제)</div></div>
+      <div><div class="rh-tldr-label">결론</div><div class="rh-tldr-val"><strong>Gemini 194초 최단</strong> &middot; 발견 능력 동등 &middot; 검증 품질 차이 명확</div></div>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <a href="index.html">← 전체 요약</a>
+    <a href="#bugs">주입 버그</a>
+    <a href="#result">결과 비교</a>
+    <a href="#approach">디버깅 접근</a>
+    <a href="#tokens">토큰 · 시간</a>
+    <a href="#verdict">최종 평가</a>
+  </nav>
+
+  <!-- 핵심 수치 -->
+  <section class="card" id="overview">
+    <div class="sh"><span class="sh-num">01</span><h2>실험 개요</h2></div>
+    <div class="metric-grid">
+      <div class="metric">
+        <div class="metric-k">버그 발견</div>
+        <div class="metric-v">전원 5/5</div>
+      </div>
+      <div class="metric">
+        <div class="metric-k">가장 빠름</div>
+        <div class="metric-v">Gemini 194초</div>
+      </div>
+      <div class="metric">
+        <div class="metric-k">최저 토큰</div>
+        <div class="metric-v">Codex 62,909</div>
+      </div>
+      <div class="metric">
+        <div class="metric-k">git diff 없이 발견</div>
+        <div class="metric-v">Gemini 유일</div>
+      </div>
+    </div>
+    <div class="callout-grid" style="margin-top:16px">
+      <div class="callout">
+        <div class="callout-k">실험 설계</div>
+        <div class="callout-v">각 AI는 자신이 V1~V4에 직접 작성한 코드를 디버깅합니다. 버그 유형은 동일하지만 각 AI의 아키텍처에 맞게 위치를 다르게 심었습니다.</div>
+      </div>
+      <div class="callout">
+        <div class="callout-k">아키텍처 영향</div>
+        <div class="callout-v">Claude는 V4에서 Repository를 분리했기 때문에 버그가 2개 파일에 분산됐습니다. Codex·Gemini는 1개 파일에 집중. Claude는 분산된 버그도 모두 발견했습니다.</div>
+      </div>
+      <div class="callout">
+        <div class="callout-k">진짜 차이</div>
+        <div class="callout-v">버그를 몇 개 찾았느냐(5/5 동일)가 아니라, 어떻게 찾았고(접근법) 얼마나 철저히 검증했느냐(검증 품질)가 이번 단계의 핵심 비교 포인트입니다.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 주입 버그 -->
+  <section class="card" id="bugs">
+    <div class="sh"><span class="sh-num">02</span><h2>주입된 버그 5개</h2></div>
+    <p class="lead">실험 종료 후 공개합니다. 버그 유형은 실무에서 자주 발생하는 상태 관리 결함(로딩 플래그 누락, null 분기 제거, 필드 매핑 오류, 상태 초기화 누락, 중복 실행 방지 제거) 5가지입니다. 같은 유형이지만 각 AI의 코드 구조에 맞게 위치를 다르게 심었습니다.</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>유형</th>
+            <th>증상</th>
+            <th class="th-claude">Claude 위치</th>
+            <th class="th-codex">Codex 위치</th>
+            <th class="th-gemini">Gemini 위치</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-label">B1</td>
+            <td>로딩 스피너 잔류</td>
+            <td>에러 시 <code>isLoading = false</code> 누락 → 스피너가 사라지지 않음</td>
+            <td>WeatherViewModel catch</td>
+            <td>WeatherViewModel onFailure</td>
+            <td>WeatherViewModel catch</td>
+          </tr>
+          <tr>
+            <td class="col-label">B2</td>
+            <td>즐겨찾기 해제 불가</td>
+            <td><code>toggleFavorite()</code>에서 "이미 즐겨찾기이면 해제" 분기를 제거 → 한번 설정하면 다시 누를 때 null로 되돌리지 않아 해제 불가</td>
+            <td>WeatherViewModel</td>
+            <td>WeatherViewModel</td>
+            <td>WeatherViewModel</td>
+          </tr>
+          <tr class="row-hl">
+            <td class="col-label">B3</td>
+            <td>온도 필드 스왑</td>
+            <td><code>currentTemp</code> ↔ <code>feelsLike</code> 뒤바뀜</td>
+            <td><strong>WeatherRepository.kt</strong><br><small style="color:var(--text3)">별도 파일 — 유일</small></td>
+            <td>WeatherViewModel</td>
+            <td>WeatherViewModel</td>
+          </tr>
+          <tr>
+            <td class="col-label">B4</td>
+            <td>에러 메시지 잔류</td>
+            <td>새 fetch 시 <code>error = null</code> 누락 → 이전 에러가 화면에 남음</td>
+            <td>WeatherViewModel selectCity</td>
+            <td>WeatherViewModel loadWeather</td>
+            <td>WeatherViewModel fetchWeatherData</td>
+          </tr>
+          <tr>
+            <td class="col-label">B5</td>
+            <td>중복 실행 / 도시 고정</td>
+            <td>중복 fetch 방지 코드를 제거하거나 새로고침 시 항상 서울로 도시를 고정하는 버그 — 빠르게 연속으로 새로고침하면 요청이 중복 실행되거나, 다른 도시를 보다가 새로고침하면 서울로 돌아감</td>
+            <td><code>fetchJob?.cancel()</code>(이전 요청 취소 코드) 제거</td>
+            <td>refresh 가드 제거</td>
+            <td><code>selectCity("서울")</code> 하드코딩</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="insight">
+      <span class="insight-icon">💡</span>
+      <span>B3만 유일하게 Claude는 <code>WeatherRepository.kt</code>에 위치. V4에서 Repository 계층을 분리한 결과입니다. 같은 버그라도 아키텍처에 따라 위치가 달라지며, Claude는 2개 파일에 분산된 버그를 모두 발견했습니다.</span>
+    </div>
+  </section>
+
+  <!-- 결과 비교 -->
+  <section class="card" id="result">
+    <div class="sh"><span class="sh-num">03</span><h2>결과 비교</h2></div>
+    <div class="ai-grid">
+      <div class="ai-card">
+        <div class="ai-card-head claude">
+          <span class="dot claude"></span> Claude
+          <span class="ai-card-model">claude-sonnet-4-6</span>
+        </div>
+        <div class="ai-card-body">
+          <div class="ai-stat hl"><span class="ai-stat-k">버그 발견</span><span class="ai-stat-v"><span class="badge ok">5 / 5</span></span></div>
+          <div class="ai-stat"><span class="ai-stat-k">소요 시간</span><span class="ai-stat-v">506초</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">빌드 검증</span><span class="ai-stat-v"><span class="badge ok">성공</span></span></div>
+          <div class="ai-stat"><span class="ai-stat-k">단위 테스트</span><span class="ai-stat-v"><span class="badge warn">미실행</span></span></div>
+          <div class="ai-stat"><span class="ai-stat-k">git diff 사용</span><span class="ai-stat-v"><span class="badge warn">첫 행동 — 변경점 먼저 파악</span></span></div>
+          <div class="ai-stat"><span class="ai-stat-k">도구 오류</span><span class="ai-stat-v">없음</span></div>
+        </div>
+      </div>
+      <div class="ai-card">
+        <div class="ai-card-head codex">
+          <span class="dot codex"></span> Codex
+          <span class="ai-card-model">gpt-5.5</span>
+        </div>
+        <div class="ai-card-body">
+          <div class="ai-stat hl"><span class="ai-stat-k">버그 발견</span><span class="ai-stat-v"><span class="badge ok">5 / 5</span></span></div>
+          <div class="ai-stat"><span class="ai-stat-k">소요 시간</span><span class="ai-stat-v">~480초</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">빌드 검증</span><span class="ai-stat-v"><span class="badge ok">성공</span></span></div>
+          <div class="ai-stat"><span class="ai-stat-k">단위 테스트</span><span class="ai-stat-v"><span class="badge ok">자체 실행 통과</span></span></div>
+          <div class="ai-stat"><span class="ai-stat-k">git diff 사용</span><span class="ai-stat-v">교차 확인용</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">도구 오류</span><span class="ai-stat-v">없음</span></div>
+        </div>
+      </div>
+      <div class="ai-card">
+        <div class="ai-card-head gemini">
+          <span class="dot gemini"></span> Gemini
+          <span class="ai-card-model">gemini-3-flash-preview</span>
+        </div>
+        <div class="ai-card-body">
+          <div class="ai-stat hl"><span class="ai-stat-k">버그 발견</span><span class="ai-stat-v"><span class="badge ok">5 / 5</span></span></div>
+          <div class="ai-stat"><span class="ai-stat-k">소요 시간</span><span class="ai-stat-v">194초 ⚡</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">빌드 검증</span><span class="ai-stat-v"><span class="badge err">실패 (JAVA_HOME 미설정)</span></span></div>
+          <div class="ai-stat"><span class="ai-stat-k">단위 테스트</span><span class="ai-stat-v"><span class="badge warn">미실행</span></span></div>
+          <div class="ai-stat"><span class="ai-stat-k">git diff 사용</span><span class="ai-stat-v"><span class="badge ok">미사용 — 직독으로 발견</span></span></div>
+          <div class="ai-stat"><span class="ai-stat-k">도구 오류</span><span class="ai-stat-v">replace 1회</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 디버깅 접근 -->
+  <section class="card" id="approach">
+    <div class="sh"><span class="sh-num">04</span><h2>디버깅 접근 방식</h2></div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>AI</th>
+            <th>첫 번째 행동</th>
+            <th>진단 방법</th>
+            <th>검증</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-label"><span class="dot claude"></span> Claude</td>
+            <td><code>git diff</code> 즉시 실행 — 변경된 줄 먼저 파악</td>
+            <td>diff hunk에서 삭제된 줄을 의미 기준으로 해석해 버그 위치 특정. 실무 개발자가 흔히 쓰는 방식이지만, <em>무엇이 바뀌었는지가 바로 보이는</em> diff를 쓰면 버그 난이도가 낮아짐</td>
+            <td><code>assembleDebug</code>(안드로이드 빌드 명령어) 빌드 성공 확인</td>
+          </tr>
+          <tr>
+            <td class="col-label"><span class="dot codex"></span> Codex</td>
+            <td>모든 .kt 파일 읽기 → 전체 구조 파악 후 <code>git diff</code>로 좁히기</td>
+            <td>코드 전체를 이해한 뒤 diff로 의심 지점을 교차 확인 — 두 단계 접근</td>
+            <td><code>assembleDebug</code> 빌드 성공 후 V5에서 직접 작성한 <code>testDebugUnitTest</code>도 자체 실행. JAVA_HOME(자바 설치 경로 환경변수) 오류도 Android Studio JBR 경로를 직접 찾아 해결</td>
+          </tr>
+          <tr class="row-hl">
+            <td class="col-label"><span class="dot gemini"></span> Gemini</td>
+            <td>WeatherViewModel.kt 파일을 바로 읽기 — diff 없이 코드 직독</td>
+            <td><strong>git diff 없이</strong> 코드 흐름과 패턴만으로 이상 지점 식별. 5개 버그를 194초 만에 찾은 것은 순수 코드 독해 능력을 보여줌</td>
+            <td><code>./gradlew assembleDebug</code> 실행 시 JAVA_HOME(자바 설치 경로 환경변수) 미설정 오류 — 빌드 도구(Gradle)가 Java 위치를 찾지 못해 빌드 자체가 불가. 단위 테스트도 미실행</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="insight">
+      <span class="insight-icon">⚠️</span>
+      <div><strong>git diff를 쓰면 사실상 답이 보입니다.</strong> Claude는 첫 행동으로 <code>git diff</code>를 실행했습니다. diff는 무엇이 삭제·추가됐는지를 직접 보여주므로 의도적으로 심은 버그를 즉시 파악할 수 있습니다. 실무에서는 유효한 디버깅 습관이지만, 이번처럼 버그를 "주입"한 실험에서는 diff가 곧 힌트입니다. 반면 Gemini는 git 이력 없이 코드만 읽어 같은 결과를 냈으므로, 순수 코드 독해 능력은 Gemini가 더 진정성 있는 증거를 남겼습니다.</div>
+    </div>
+    <div class="insight">
+      <span class="insight-icon">🏆</span>
+      <div><strong>Codex는 요청 범위를 스스로 넘었습니다.</strong> 지시는 "버그를 찾아서 고쳐라"였지만, V5에서 직접 작성한 단위 테스트가 있다는 것을 기억하고 <code>testDebugUnitTest</code>를 자체 실행했습니다. 나아가 JAVA_HOME 오류(빌드 도구가 Java 위치를 찾지 못하는 환경 문제)도 Android Studio의 JBR 경로를 직접 찾아 해결했습니다. 버그 발견에서 끝나지 않고 "수정이 실제로 동작하는지"까지 검증한 유일한 AI입니다.</div>
+    </div>
+  </section>
+
+  <!-- 토큰 · 시간 -->
+  <section class="card" id="tokens">
+    <div class="sh"><span class="sh-num">05</span><h2>토큰 · 시간</h2></div>
+
+    <div class="ai-grid">
+      <div class="ai-card">
+        <div class="ai-card-head claude"><span class="dot claude"></span> Claude</div>
+        <div class="ai-card-body">
+          <div class="ai-stat hl"><span class="ai-stat-k">소요 시간</span><span class="ai-stat-v">506초</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">총 처리 토큰</span><span class="ai-stat-v">1,862,799</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">신규 입력</span><span class="ai-stat-v">43</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">캐시 생성</span><span class="ai-stat-v">171,419</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">캐시 재사용</span><span class="ai-stat-v">1,625,720 (87%)</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">출력</span><span class="ai-stat-v">65,617</span></div>
+        </div>
+      </div>
+      <div class="ai-card">
+        <div class="ai-card-head codex"><span class="dot codex"></span> Codex</div>
+        <div class="ai-card-body">
+          <div class="ai-stat hl"><span class="ai-stat-k">소요 시간</span><span class="ai-stat-v">~480초</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">총 사용 토큰</span><span class="ai-stat-v">62,909 🏆</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">집계 방식</span><span class="ai-stat-v">신규 소비 기준</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">V5 대비</span><span class="ai-stat-v">73,606 → 62,909</span></div>
+        </div>
+      </div>
+      <div class="ai-card">
+        <div class="ai-card-head gemini"><span class="dot gemini"></span> Gemini</div>
+        <div class="ai-card-body">
+          <div class="ai-stat hl"><span class="ai-stat-k">소요 시간</span><span class="ai-stat-v">194초 ⚡</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">총 처리 토큰</span><span class="ai-stat-v">3,654,494</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">입력 합산</span><span class="ai-stat-v">1,954,283</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">캐시</span><span class="ai-stat-v">1,648,221</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">사고(thoughts)</span><span class="ai-stat-v">44,539</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">출력</span><span class="ai-stat-v">7,451</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 소요 시간 바 차트 -->
+    <div style="margin-top:18px">
+      <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:10px">소요 시간 비교 (초)</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="bar-item" style="display:flex;align-items:center;gap:10px">
+          <span style="width:60px;font-size:12px;font-weight:700;color:var(--claude)">Claude</span>
+          <div class="bar-track" style="flex:1;height:10px;background:var(--border);border-radius:999px;overflow:hidden">
+            <div class="bar-fill claude" style="width:100%;height:100%;background:var(--claude);border-radius:999px"></div>
+          </div>
+          <span style="font-size:12px;font-family:monospace;color:var(--text2);width:50px;text-align:right">506s</span>
+        </div>
+        <div class="bar-item" style="display:flex;align-items:center;gap:10px">
+          <span style="width:60px;font-size:12px;font-weight:700;color:var(--codex)">Codex</span>
+          <div class="bar-track" style="flex:1;height:10px;background:var(--border);border-radius:999px;overflow:hidden">
+            <div class="bar-fill codex" style="width:95%;height:100%;background:var(--codex);border-radius:999px"></div>
+          </div>
+          <span style="font-size:12px;font-family:monospace;color:var(--text2);width:50px;text-align:right">~480s</span>
+        </div>
+        <div class="bar-item" style="display:flex;align-items:center;gap:10px">
+          <span style="width:60px;font-size:12px;font-weight:700;color:var(--gemini)">Gemini</span>
+          <div class="bar-track" style="flex:1;height:10px;background:var(--border);border-radius:999px;overflow:hidden">
+            <div class="bar-fill gemini" style="width:38%;height:100%;background:var(--gemini);border-radius:999px"></div>
+          </div>
+          <span style="font-size:12px;font-family:monospace;color:var(--text2);width:50px;text-align:right">194s</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="note-box" style="margin-top:16px">각 AI의 토큰 집계 방식이 다릅니다. Claude는 캐시 포함 전체 처리량(캐시 재사용 87%), Codex는 신규 소비 기준, Gemini는 턴마다 컨텍스트가 반복 포함되는 전체 합산입니다. 직접 비교보다 규모 파악 용도로 해석하세요.</div>
+  </section>
+
+  <!-- 최종 평가 -->
+  <section class="card" id="verdict">
+    <div class="sh"><span class="sh-num">06</span><h2>최종 평가</h2></div>
+
+    <div class="score-verdict-grid">
+      <div class="score-cell">
+        <div class="score-label"><span class="dot claude"></span> Claude</div>
+        <div class="score-desc">버그 5/5 발견. git diff로 변경점을 먼저 파악해 빠르게 위치를 잡는 접근. 빌드 확인으로 수정을 마무리했으며 환경 문제 없이 완료.</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-label"><span class="dot codex"></span> Codex</div>
+        <div class="score-desc">버그 5/5 발견. 수정 후 V5에서 직접 작성한 단위 테스트까지 자체 실행해 동작을 객관적으로 증명. JAVA_HOME 오류도 스스로 해결. 이번 단계에서 가장 철저한 검증.</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-label"><span class="dot gemini"></span> Gemini</div>
+        <div class="score-desc">버그 5/5 발견이 가장 빠름(194초). git diff 없이 코드 직독으로 찾은 것이 인상적. 그러나 JAVA_HOME 환경 오류로 빌드 검증을 완료하지 못했음.</div>
+      </div>
+    </div>
+
+    <div class="insight" style="margin-top:16px">
+      <span class="insight-icon">🔑</span>
+      <div><strong>이번 실험의 핵심 메시지:</strong> 세 AI 모두 버그 5개를 전부 찾았습니다. <em>발견 능력 자체는 차이가 없습니다.</em> 차이는 그 다음 — 수정이 올바른지 어떻게 확인했느냐입니다. Codex는 단위 테스트를 실행해 동작을 객관적으로 증명했고, Claude는 빌드 성공으로 최소한의 검증을 마쳤으며, Gemini는 환경 문제(JAVA_HOME)로 검증 자체를 완료하지 못했습니다. 버그를 찾는 것과, 고친 것이 실제로 동작한다고 증명하는 것은 다릅니다.</div>
+    </div>
+    <div class="insight" style="margin-top:8px">
+      <span class="insight-icon">📊</span>
+      <div><strong>V1~V6 종합:</strong> 단순 구현(V1–V3)은 Gemini·Cursor, 아키텍처 설계(V4)는 Claude, 테스트 용이성(V5)은 Claude의 V4 선택 덕분, 디버깅 검증(V6)은 Codex가 앞섰습니다. <strong>각 단계마다 다른 AI가 강점을 드러냈습니다.</strong> 단일 도구가 모든 면에서 최고라는 결론은 없습니다.</div>
+    </div>
+  </section>
+
+  <footer class="rf">
+    <a href="index.html">← 전체 요약</a>
+    <a href="report_v7.html">V7 Room DB →</a>
+  </footer>
+
+</div>
+</body>
+</html>

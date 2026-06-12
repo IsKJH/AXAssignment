@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>AI 코딩 도구 — 더 잘 쓰는 방법</title>
+<link rel="stylesheet" href="report_common.css?v=20260601">
+<style>
+.tip-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:14px 0; }
+.tip-card { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:18px 20px; }
+.tip-tag { display:inline-flex; font-size:10.5px; font-weight:700; letter-spacing:.3px; padding:2px 8px; border-radius:3px; margin-bottom:8px; border:1px solid transparent; }
+.tag-claude { color:var(--claude); background:rgba(194,98,42,.08); border-color:rgba(194,98,42,.2); }
+.tag-codex  { color:var(--codex);  background:rgba(11,138,94,.08);  border-color:rgba(11,138,94,.2); }
+.tag-gemini { color:var(--gemini); background:rgba(26,79,219,.08);  border-color:rgba(26,79,219,.2); }
+.tag-all    { color:var(--text2); background:var(--bg); border-color:var(--border); }
+.tip-title { font-size:14.5px; font-weight:700; color:var(--text); margin-bottom:6px; }
+.tip-desc  { font-size:13px; color:var(--text2); line-height:1.7; }
+.code-block { background:#1c1c1e; color:#d4d4d4; border-radius:6px; padding:14px 18px; font-family:'JetBrains Mono',monospace; font-size:12.5px; line-height:1.8; margin:10px 0; overflow-x:auto; }
+.code-block .comment { color:#6a9955; }
+.code-block .key { color:#9cdcfe; }
+.code-block .val { color:#ce9178; }
+.connect-row { display:grid; grid-template-columns:1fr 24px 1fr; gap:0; align-items:center; margin-bottom:8px; }
+.connect-from { background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:10px 14px; font-size:13px; color:var(--text2); }
+.connect-arrow { text-align:center; font-size:16px; color:var(--text3); }
+.connect-to { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:10px 14px; font-size:13px; color:var(--text); font-weight:600; }
+.feature-badge { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:3px 9px; border-radius:3px; border:1px solid var(--border); background:var(--bg); color:var(--text3); margin-right:4px; }
+.feature-badge.new { background:#f0fdf4; border-color:#bbf7d0; color:#166534; }
+@media (max-width:860px) { .tip-grid { grid-template-columns:1fr; } .connect-row { grid-template-columns:1fr; } .connect-arrow { transform:rotate(90deg); } }
+</style>
+</head>
+<body id="top">
+<div class="wrap">
+
+  <header class="rh">
+    <h1 class="rh-title">AI 코딩 도구 — 설정하면 달라지는 것들</h1>
+    <p class="rh-sub">이 실험은 CLAUDE.md(AI에게 프로젝트 규칙을 알려주는 지시서 파일)도, Hooks도, MCP(Model Context Protocol — AI 도구와 외부 서비스 연동 표준)도 없는 <strong>순수 기본 상태</strong>의 AI 기량을 테스트했습니다. 실제 개발 환경에서는 아래 설정들을 추가하면 AI의 약점이 규칙으로 막히고, 반복 작업이 자동화됩니다.</p>
+    <div class="rh-meta">
+      <span class="ai-pill"><span class="dot claude"></span>Claude Code</span>
+      <span class="ai-pill"><span class="dot codex"></span>OpenAI Codex</span>
+      <span class="ai-pill"><span class="dot gemini"></span>Gemini CLI</span>
+      <span class="tag-sm">검증된 공식 기능만 수록</span>
+    </div>
+    <div class="rh-tldr">
+      <div><div class="rh-tldr-label">이 페이지의 목적</div><div class="rh-tldr-val">실험에서 관찰된 각 AI의 약점을 설정으로 보완하는 방법 + 최신 기능 소개</div></div>
+      <div><div class="rh-tldr-label">대상</div><div class="rh-tldr-val">CLI로 AI를 쓰기 시작한 개발자 · 더 효과적으로 쓰고 싶은 팀</div></div>
+      <div><div class="rh-tldr-label">핵심 메시지</div><div class="rh-tldr-val">좋은 프롬프트보다 좋은 설정이 먼저다 — 설정이 AI의 판단 기준이 된다</div></div>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <a href="index.html">← 전체 요약</a>
+    <a href="#context-file">01 지시서 파일</a>
+    <a href="#subagents">02 Sub-agents</a>
+    <a href="#hooks">03 Hooks</a>
+    <a href="#mcp">04 MCP</a>
+    <a href="#github">05 GitHub Actions</a>
+    <a href="#apply">06 이 실험에 적용하면</a>
+    <a href="#dialog-setup">07 대화로 시작하기</a>
+    <a href="#test-first">08 테스트 먼저 패턴</a>
+    <a href="#roadmap">09 팀 적용 로드맵</a>
+    <a href="#refs">10 참고 자료</a>
+  </nav>
+
+  <!-- 01 지시서 파일 -->
+  <section class="card" id="context-file">
+    <div class="sh"><span class="sh-num">01</span><h2>지시서 파일 — AI에게 프로젝트 규칙 미리 알려주기</h2></div>
+    <p class="lead">모든 AI 도구에는 "이 프로젝트에서 어떻게 행동해야 하는지"를 기록해두는 파일이 있습니다. <code>CLAUDE.md</code>는 Claude Code가 프로젝트 시작 시 자동으로 읽는 규칙 파일로, 아키텍처 지침·금지 패턴·빌드 명령 등을 한 번만 적어두면 매 대화에서 반복하지 않아도 됩니다. 이 파일이 없으면 AI는 매 대화마다 처음부터 맥락을 파악하고, 이미 알려진 실수를 반복합니다.</p>
+
+    <div class="tbl-wrap" style="margin-bottom:16px">
+      <table>
+        <thead>
+          <tr><th>도구</th><th>파일명</th><th>위치</th><th>공식 문서</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="dot claude" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px"></span>Claude Code</td>
+            <td><code>CLAUDE.md</code></td>
+            <td>프로젝트 루트 · <code>~/.claude/</code> (전역)</td>
+            <td><a href="https://code.claude.com/docs/en/best-practices" target="_blank" style="color:var(--claude)">공식 문서 →</a></td>
+          </tr>
+          <tr>
+            <td><span class="dot codex" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px"></span>OpenAI Codex</td>
+            <td><code>AGENTS.md</code></td>
+            <td>프로젝트 루트 · <code>~/.codex/</code> (전역)</td>
+            <td><a href="https://developers.openai.com/codex/guides/agents-md" target="_blank" style="color:var(--codex)">공식 문서 →</a></td>
+          </tr>
+          <tr>
+            <td><span class="dot gemini" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px"></span>Gemini CLI</td>
+            <td><code>GEMINI.md</code></td>
+            <td>프로젝트 루트 · <code>~/.gemini/</code> (전역)</td>
+            <td><a href="https://geminicli.com/docs/cli/gemini-md/" target="_blank" style="color:var(--gemini)">공식 문서 →</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="font-size:.9rem;font-weight:700;color:var(--text2);margin:0 0 10px">Android 프로젝트용 최소 CLAUDE.md 예시</h3>
+    <div class="code-block"><span class="comment"># WeatherNow Android</span>
+
+<span class="key">## 빌드 명령</span>
+- `./gradlew assembleDebug`  <span class="comment"># gradlew(그레이들 래퍼 — 빌드 도구 실행 스크립트) · assembleDebug = 디버그 APK 빌드</span>
+- `./gradlew test`           <span class="comment"># 단위 테스트</span>
+
+<span class="key">## 금지 규칙</span>
+- CoroutineWorker에서 runBlocking 사용 금지
+- 기존 단위 테스트 수정 금지 (새 테스트 추가는 허용)
+- V5 이후 테스트가 통과하지 않으면 커밋하지 말 것
+
+<span class="key">## 아키텍처</span>
+- data/    → Repository 구현체, Room DB
+- domain/  → Entity, Repository 인터페이스 (DIP 준수)
+- ui/      → Composable, ViewModel</div>
+
+    <div class="insight" style="margin-top:12px">
+      <span class="insight-icon">💡</span>
+      <div><strong>Karpathy의 4규칙 (CLAUDE.md 핵심):</strong> ① 모호하면 짜기 전에 물어봐라 ② 요청한 것만 짜라 (불필요한 추상화 금지) ③ 관련 없는 코드 건드리지 마라 ④ 막연한 요청은 검증 가능한 기준으로 변환해라 ("버그 고쳐" → "이 테스트를 통과시켜"). 파일은 <strong>200줄 이하</strong>로 유지하는 것이 원칙입니다.</div>
+    </div>
+  </section>
+
+  <!-- 02 Sub-agents -->
+  <section class="card" id="subagents">
+    <div class="sh"><span class="sh-num">02</span><h2>Sub-agents — 메인 AI가 전문 AI팀에 작업을 분배</h2></div>
+
+    <span class="feature-badge new">Claude Code 최신</span>
+    <span class="feature-badge">공식 문서 확인됨</span>
+
+    <p class="lead" style="margin-top:12px">하나의 큰 작업을 여러 전문 에이전트에게 나눠서 처리합니다. 각 서브에이전트는 독립된 컨텍스트 윈도우(AI가 한 번에 처리할 수 있는 입력 길이 한계)를 가지므로, 메인 대화에 불필요한 내용이 쌓이지 않고 토큰 비용을 5~10배 절감할 수 있습니다.</p>
+
+    <div class="tbl-wrap" style="margin-bottom:16px">
+      <table>
+        <thead>
+          <tr><th>패턴</th><th>구조</th><th>언제 씀</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Fan-out</strong></td>
+            <td>메인 → 서브A + 서브B + 서브C (병렬)</td>
+            <td>여러 파일을 동시에 분석·수정할 때</td>
+          </tr>
+          <tr>
+            <td><strong>Pipeline</strong></td>
+            <td>서브A → 서브B → 서브C (순차)</td>
+            <td>분석 → 구현 → 테스트 단계가 있을 때</td>
+          </tr>
+          <tr>
+            <td><strong>Producer-Reviewer</strong></td>
+            <td>서브A(생성) → 서브B(검증)</td>
+            <td>코드 생성 후 품질 검증이 필요할 때</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="font-size:.9rem;font-weight:700;color:var(--text2);margin:0 0 10px">Android 개발 활용 예시</h3>
+    <div class="code-block"><span class="comment"># 메인 에이전트에게 지시</span>
+<span class="val">"WeatherViewModel을 리팩토링해줘.
+ 서브에이전트 A는 기존 테스트 분석을,
+ 서브에이전트 B는 ViewModel 구현을 담당해.
+ A가 끝난 후 B가 테스트를 깨지 않는 방향으로 구현해."</span>
+
+<span class="comment"># 결과: 메인 컨텍스트에 테스트 전체 내용이 안 쌓임</span>
+<span class="comment"># 각 서브에이전트가 자기 역할만 처리하고 결과만 보고</span></div>
+
+    <div class="insight" style="margin-top:12px">
+      <span class="insight-icon">📋</span>
+      <div><strong>이 실험과의 연결:</strong> 이번 실험에서 Claude·Codex·Gemini 각각이 순차적으로 같은 작업을 했습니다. Sub-agents를 쓰면 <em>세 AI가 병렬로 같은 작업을 동시에 처리</em>하고 결과를 비교하는 것이 가능합니다. 이 실험 자체를 Sub-agents로 자동화할 수 있다는 의미입니다.</div>
+    </div>
+  </section>
+
+  <!-- 03 Hooks -->
+  <section class="card" id="hooks">
+    <div class="sh"><span class="sh-num">03</span><h2>Hooks — AI가 뭔가 할 때마다 자동으로 실행되는 규칙</h2></div>
+
+    <span class="feature-badge new">Claude Code 공식 기능</span>
+
+    <p class="lead" style="margin-top:12px">AI가 파일을 쓰거나, 터미널 명령을 실행하거나, 커밋하기 전에 자동으로 쉘 명령을 실행합니다. 개발자가 확인하지 않아도 항상 실행되는 규칙입니다.</p>
+
+    <h3 style="font-size:.9rem;font-weight:700;color:var(--text2);margin:0 0 8px">라이프사이클 이벤트</h3>
+    <div class="tip-grid">
+      <div class="tip-card">
+        <div class="tip-tag tag-all">PreToolUse</div>
+        <div class="tip-title">도구 실행 전</div>
+        <div class="tip-desc">위험한 명령 차단. <code>exit 2</code>로 종료하면 Claude가 해당 동작을 중단합니다.</div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-tag tag-all">PostToolUse</div>
+        <div class="tip-title">도구 실행 후</div>
+        <div class="tip-desc">파일 수정 후 자동 포맷팅·린팅 실행. 코드 품질을 사람이 확인하지 않아도 유지합니다.</div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-tag tag-all">PostWrite</div>
+        <div class="tip-title">파일 저장 후</div>
+        <div class="tip-desc">Kotlin 파일 저장 시 ktlint 자동 실행. 커밋 전에 린트 에러가 없음을 보장합니다.</div>
+      </div>
+    </div>
+
+    <h3 style="font-size:.9rem;font-weight:700;color:var(--text2);margin:16px 0 8px">Android 개발 Hooks 예시</h3>
+    <div class="code-block"><span class="comment">// .claude/settings.json</span>
+{
+  <span class="key">"hooks"</span>: {
+    <span class="key">"PostWrite"</span>: [
+      {
+        <span class="key">"matcher"</span>: <span class="val">"**/*.kt"</span>,
+        <span class="key">"command"</span>: <span class="val">"cd $CLAUDE_PROJECT_DIR && ./gradlew ktlint -q"</span>
+      }
+    ],
+    <span class="key">"PreToolUse"</span>: [
+      {
+        <span class="key">"matcher"</span>: <span class="val">"Bash"</span>,
+        <span class="key">"command"</span>: <span class="val">"echo '$CLAUDE_TOOL_INPUT' | grep -q 'rm -rf' && exit 2 || exit 0"</span>
+      }
+    ]
+  }
+}</div>
+
+    <div class="insight" style="margin-top:12px">
+      <span class="insight-icon">🔧</span>
+      <div><strong>이 실험과의 연결:</strong> V6에서 Gemini가 버그를 수정했지만 JAVA_HOME 환경 오류로 빌드 검증을 완료하지 못했습니다. PostWrite Hook에 <code>./gradlew assembleDebug</code>를 걸어두면 파일이 저장될 때마다 자동으로 빌드를 확인합니다. 검증 누락이 구조적으로 불가능해집니다.</div>
+    </div>
+  </section>
+
+  <!-- 04 MCP -->
+  <section class="card" id="mcp">
+    <div class="sh"><span class="sh-num">04</span><h2>MCP — AI가 외부 도구를 직접 읽고 쓰는 표준 프로토콜</h2></div>
+
+    <p class="lead">MCP(Model Context Protocol — AI 도구와 외부 서비스 연동 표준)는 AI가 GitHub, Firebase, Jira, Slack, 데이터베이스 등 외부 도구와 직접 연결되는 표준 방식입니다. 정보를 복사·붙여넣기하지 않아도 AI가 직접 도구에서 읽고 씁니다.</p>
+
+    <div class="tbl-wrap" style="margin-bottom:16px">
+      <table>
+        <thead>
+          <tr><th>MCP 서버</th><th>기능</th><th>Android 개발 활용</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>android-mcp-server</strong></td>
+            <td>ADB(안드로이드 기기 연결 도구) 제어, 스크린샷, UI 트리 분석</td>
+            <td>AI가 실기기에서 앱 직접 조작 및 버그 확인</td>
+          </tr>
+          <tr>
+            <td><strong>github</strong></td>
+            <td>PR 생성/조회, 이슈 읽기, 코드 검색</td>
+            <td>"이 이슈 분석하고 PR 만들어줘" 한 번에</td>
+          </tr>
+          <tr>
+            <td><strong>filesystem</strong></td>
+            <td>파일 시스템 직접 접근</td>
+            <td>프로젝트 전체를 컨텍스트로 활용</td>
+          </tr>
+          <tr>
+            <td><strong>firebase</strong></td>
+            <td>Firestore 쿼리, Auth 관리</td>
+            <td>프로덕션 데이터를 직접 분석·디버깅</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="code-block"><span class="comment"># Claude Code에 Android MCP 추가 (터미널)</span>
+claude mcp add android-mcp-server
+
+<span class="comment"># 그러면 이런 프롬프트가 가능해짐:</span>
+<span class="val">"앱 설치하고 서울 탭 눌러서 날씨가 뜨는지 스크린샷 찍어서 확인해줘"</span>
+
+<span class="comment"># V8 실험에서 ADB로 WorkManager(백그라운드 작업 스케줄러)를 수동 트리거했던 것을 AI가 직접 함</span></div>
+
+    <div class="insight" style="margin-top:12px">
+      <span class="insight-icon">📱</span>
+      <div><strong>이 실험과의 연결:</strong> V8에서 각 AI가 직접 ADB 명령으로 WorkManager를 트리거하고 스크린샷을 찍었습니다. MCP 설정 시 이 과정 전체를 AI가 자율적으로 수행합니다. "알림이 실제로 왔는지 확인해줘"라는 한 문장으로 V8 실기기 검증 전체를 자동화할 수 있습니다.</div>
+    </div>
+  </section>
+
+  <!-- 05 GitHub Actions -->
+  <section class="card" id="github">
+    <div class="sh"><span class="sh-num">05</span><h2>GitHub Actions 연동 — PR마다 AI 자동 리뷰</h2></div>
+
+    <span class="feature-badge new">Claude Code 공식 기능</span>
+
+    <p class="lead" style="margin-top:12px">PR을 올릴 때마다 Claude가 자동으로 코드를 리뷰하고, <code>@claude</code>를 멘션하면 즉시 수정안을 제시합니다. CI/CD 파이프라인에 AI 리뷰어를 추가하는 것입니다.</p>
+
+    <div class="code-block"><span class="comment"># 설치 (Claude Code CLI에서)</span>
+claude /install-github-app
+
+<span class="comment"># PR 코멘트에서 사용</span>
+<span class="val">@claude 이 ViewModel에서 메모리 누수 가능성 있는 부분 확인해줘</span>
+<span class="val">@claude suspend fun 대신 runBlocking 쓴 곳 찾아서 수정해줘</span></div>
+
+    <div class="tip-grid">
+      <div class="tip-card">
+        <div class="tip-tag tag-claude">자동 코드 리뷰</div>
+        <div class="tip-title">PR 열 때마다 분석</div>
+        <div class="tip-desc">새 PR이 올라오면 Claude가 자동으로 잠재적 문제점, 개선 제안을 코멘트로 남깁니다.</div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-tag tag-claude">@claude 멘션</div>
+        <div class="tip-title">즉석 수정 요청</div>
+        <div class="tip-desc">PR 코멘트에서 @claude를 멘션하면 해당 코드를 직접 수정하는 PR을 만들어줍니다.</div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-tag tag-claude">보안 감사</div>
+        <div class="tip-title">취약점 자동 탐지</div>
+        <div class="tip-desc">매 커밋마다 보안 취약점을 체크하고 경고를 남깁니다. 코드 리뷰어 역할을 AI가 합니다.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 이 실험에 적용하면 -->
+  <section class="card" id="apply">
+    <div class="sh"><span class="sh-num">06</span><h2>이 실험의 약점들 — 설정 하나로 막을 수 있었다면</h2></div>
+
+    <p class="lead">이번 실험에서 관찰된 각 AI의 실수와 약점을 설정으로 보완할 수 있는지 매핑합니다.</p>
+
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+      <div class="connect-row">
+        <div class="connect-from">V7 Gemini — 기존 테스트 직접 수정 (원칙 위반)</div>
+        <div class="connect-arrow">→</div>
+        <div class="connect-to">GEMINI.md: "기존 단위 테스트 수정 금지" 한 줄</div>
+      </div>
+      <div class="connect-row">
+        <div class="connect-from">V8 Gemini — runBlocking 안티패턴(코루틴 스레드를 강제 차단하는 위험한 사용법) → 실기기 크래시</div>
+        <div class="connect-arrow">→</div>
+        <div class="connect-to">GEMINI.md: "CoroutineWorker(코루틴 기반 백그라운드 작업 클래스)에서 runBlocking 금지"</div>
+      </div>
+      <div class="connect-row">
+        <div class="connect-from">V6 Gemini — JAVA_HOME 오류로 빌드 검증 실패</div>
+        <div class="connect-arrow">→</div>
+        <div class="connect-to">PostWrite Hook: 파일 저장 시 자동 빌드 확인</div>
+      </div>
+      <div class="connect-row">
+        <div class="connect-from">V8 실기기 검증 — ADB 수동 트리거 필요</div>
+        <div class="connect-arrow">→</div>
+        <div class="connect-to">android-mcp-server: AI가 ADB 직접 실행</div>
+      </div>
+      <div class="connect-row">
+        <div class="connect-from">V5 Codex — 3개 테스트 실패 후 수동 원인 진단</div>
+        <div class="connect-arrow">→</div>
+        <div class="connect-to">PostWrite Hook: 테스트 실패 시 자동 로그 분석 트리거</div>
+      </div>
+      <div class="connect-row">
+        <div class="connect-from">전 단계 — 각 AI가 컨텍스트 누적으로 토큰 낭비</div>
+        <div class="connect-arrow">→</div>
+        <div class="connect-to">Sub-agents: 작업별 전문 에이전트 분리 → 토큰 5~10배 절감</div>
+      </div>
+    </div>
+
+    <div class="insight">
+      <span class="insight-icon">🎯</span>
+      <div><strong>결론:</strong> 이번 실험은 AI의 <em>순수 기량</em>을 테스트했습니다. 여기에 CLAUDE.md 하나(프로젝트 규칙), Hooks 하나(자동 검증), MCP 하나(도구 연결)를 더하면 — AI의 약점은 규칙으로 막히고, 반복 작업은 자동화되고, 외부 도구와 연결됩니다. 설정 없이 프롬프트만으로 싸우는 것이 아니라, AI를 제대로 장착하는 것이 2026년 개발자의 핵심 역량입니다.</div>
+    </div>
+  </section>
+
+  <!-- 07 AI와 대화하면서 시작하기 -->
+  <section class="card" id="dialog-setup">
+    <div class="sh"><span class="sh-num">07</span><h2>AI와 대화하면서 시작하기 — 설정을 처음 만드는 방법</h2></div>
+    <p class="lead">CLAUDE.md도, 테스트 케이스도, AI에게 초안을 부탁하면 됩니다. 단 "처음부터 완벽하게"를 목표로 하지 말고, <strong>실제로 AI가 실수할 때마다 규칙을 한 줄씩 추가</strong>하는 방식이 훨씬 효과적입니다.</p>
+
+    <h3 style="font-size:.9rem;font-weight:700;color:var(--text2);margin:0 0 10px">CLAUDE.md 초안 — 실제 대화 흐름</h3>
+    <div class="code-block"><span class="comment"># 1단계: AI에게 현재 프로젝트 설명 → 초안 부탁 (5분)</span>
+<span class="val">"지금 Android Kotlin MVVM 프로젝트야. Claude Code에 쓸
+ CLAUDE.md 초안 만들어줘. 빌드는 ./gradlew assembleDebug,
+ 기존 테스트 파일 수정은 금지야."</span>
+
+<span class="comment"># 2단계: 실제로 써보기 → AI가 실수하면 규칙 한 줄 추가</span>
+<span class="val">"AI가 CoroutineWorker에서 runBlocking을 써서 실기기 크래시가 났어.
+ 이 패턴 금지 규칙 추가해줘."</span>
+
+<span class="comment"># 3단계: 반복 → 3개월 후엔 팀만의 맞춤 규칙북이 됩니다</span></div>
+
+    <div class="tip-grid" style="margin-top:14px">
+      <div class="tip-card">
+        <div class="tip-tag tag-all">처음엔 5줄도 충분</div>
+        <div class="tip-title">완벽함보다 시작이 중요</div>
+        <div class="tip-desc">빈 파일보다 5줄짜리 CLAUDE.md가 훨씬 낫습니다. AI와 함께 일하면서 "이 실수는 규칙으로 막자"는 순간마다 한 줄씩 추가하세요.</div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-tag tag-all">실제 실수에서 나온 규칙이 최강</div>
+        <div class="tip-title">추상 규칙 vs 경험 규칙</div>
+        <div class="tip-desc">"잘 짜줘" 같은 추상적 규칙보다 이번 실험의 "CoroutineWorker에서 runBlocking 금지"처럼 실제 사고에서 나온 규칙이 훨씬 효과적입니다.</div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-tag tag-all">팀 공유 자산</div>
+        <div class="tip-title">개인 → 팀 규칙으로</div>
+        <div class="tip-desc">한 팀원이 겪은 AI 실수를 CLAUDE.md에 추가하면, 다른 팀원은 같은 실수를 처음부터 겪지 않습니다. 팀의 집단 지성이 됩니다.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 08 테스트 먼저 패턴 -->
+  <section class="card" id="test-first">
+    <div class="sh"><span class="sh-num">08</span><h2>테스트 먼저, 코드 나중 — 검증 가능한 목표를 주는 방법</h2></div>
+    <p class="lead">AI에게 막연한 요청을 하면 막연한 결과가 나옵니다. <strong>"이 테스트를 통과하는 X를 만들어줘"</strong> 형태로 바꾸면 AI가 스스로 검증하면서 작업하고, 결과가 맞는지 틀린지를 사람이 직접 확인하지 않아도 됩니다.</p>
+
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+      <div class="connect-row">
+        <div class="connect-from">❌ "로그인 기능 만들어줘"</div>
+        <div class="connect-arrow">→</div>
+        <div class="connect-to">AI가 뭘 만들어도 맞는지 판단하기 어렵습니다</div>
+      </div>
+      <div class="connect-row">
+        <div class="connect-from">✅ "이메일 형식 검증 / 잘못된 비밀번호 에러 처리 / 성공 시 토큰 저장 — 이 3가지 테스트 케이스를 먼저 만들고, 그걸 통과하는 로그인 기능을 구현해줘"</div>
+        <div class="connect-arrow">→</div>
+        <div class="connect-to">AI가 스스로 테스트를 실행하며 검증. Hook이 있으면 저장할 때마다 자동 실행</div>
+      </div>
+    </div>
+
+    <h3 style="font-size:.9rem;font-weight:700;color:var(--text2);margin:16px 0 8px">주의: AI가 만든 테스트의 함정</h3>
+    <div class="tip-grid">
+      <div class="tip-card">
+        <div class="tip-tag tag-all" style="background:#fef2f2;border-color:#fecaca;color:#991b1b">나쁜 테스트 예시</div>
+        <div class="tip-title">뭘 반환해도 통과</div>
+        <div class="tip-desc"><code>assert result is not None</code><br>이런 검증은 버그가 있어도 통과됩니다. AI가 자신이 짠 코드를 통과시키기 쉽게 테스트를 쓰는 경향이 있습니다.</div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-tag tag-all" style="background:#f0fdf4;border-color:#bbf7d0;color:#166534">좋은 테스트 예시</div>
+        <div class="tip-title">실패 케이스를 정확히 잡음</div>
+        <div class="tip-desc"><code>assert error.message == "비밀번호가 틀렸습니다"</code><br>정확한 에러 메시지, 상태 코드, 반환값 형식을 검증해야 진짜 버그를 잡습니다.</div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-tag tag-all">최소 검토 포인트</div>
+        <div class="tip-title">테스트 받은 후 한 번만</div>
+        <div class="tip-desc">AI에게 "이 테스트에서 X 조건이 실패하면 어떤 에러가 나와?"라고 물어보세요. 설명하지 못하면 테스트가 약한 겁니다.</div>
+      </div>
+    </div>
+
+    <div class="insight" style="margin-top:12px">
+      <span class="insight-icon">📋</span>
+      <div><strong>테스트 케이스도 AI와 대화로 만들면 됩니다.</strong> 단, AI가 테스트도 쓰고 코드도 쓰면 "AI의 셀프 합격"이 될 수 있습니다. <strong>"이 테스트가 진짜 실패 케이스를 잡을 수 있어?"</strong>라고 한 번 더 물어보는 습관이 AI 결과물의 신뢰도를 높입니다.</div>
+    </div>
+  </section>
+
+  <!-- 09 팀 적용 로드맵 -->
+  <section class="card" id="roadmap">
+    <div class="sh"><span class="sh-num">09</span><h2>팀 적용 로드맵 — 단계별 자동화 수준 높이기</h2></div>
+    <p class="lead">한 번에 모든 걸 설정하려 하지 마세요. 레벨별로 단계를 밟으면 2~3개월 안에 <strong>AI가 실수를 구조적으로 하기 어려운 환경</strong>이 만들어집니다.</p>
+
+    <div class="tbl-wrap" style="margin-bottom:16px">
+      <table>
+        <thead>
+          <tr><th>레벨</th><th>할 것</th><th>효과</th><th>목표 기간</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Lv.1</strong><br><span style="font-size:11px;color:var(--text3)">기초 설정</span></td>
+            <td>AI와 대화로 CLAUDE.md 초안 작성<br>실수할 때마다 규칙 한 줄 추가</td>
+            <td>AI가 같은 실수를 반복하지 않음</td>
+            <td>1~2주</td>
+          </tr>
+          <tr>
+            <td><strong>Lv.2</strong><br><span style="font-size:11px;color:var(--text3)">테스트 패턴</span></td>
+            <td>"테스트 먼저 → 구현" 패턴 습관화</td>
+            <td>AI 결과를 믿지 않고 검증하는 구조</td>
+            <td>2~4주</td>
+          </tr>
+          <tr>
+            <td><strong>Lv.3</strong><br><span style="font-size:11px;color:var(--text3)">자동화 기반</span></td>
+            <td>PostWrite Hook으로 테스트 자동 실행 셋업</td>
+            <td>AI가 코드 수정 시 테스트 결과 자동 피드백 — 사람이 개입 안 해도 됨</td>
+            <td>3~5주</td>
+          </tr>
+          <tr>
+            <td><strong>Lv.4</strong><br><span style="font-size:11px;color:var(--text3)">완전 자동화</span></td>
+            <td>GitHub Actions + @claude PR 자동 리뷰<br>Sub-agents로 병렬 작업 분배</td>
+            <td>AI가 AI를 검증하는 구조 — 사람은 최종 판단만</td>
+            <td>6~8주</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="font-size:.9rem;font-weight:700;color:var(--text2);margin:0 0 10px">4주 실전 루틴</h3>
+    <div class="tip-grid">
+      <div class="tip-card">
+        <div class="tip-tag tag-claude">1주차</div>
+        <div class="tip-title">환경 셋업</div>
+        <div class="tip-desc">AI에게 현재 프로젝트 설명 → CLAUDE.md 초안 요청 → 실제 작업에 투입 → 문제 생기면 규칙 추가</div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-tag tag-codex">2주차</div>
+        <div class="tip-title">테스트 먼저 패턴</div>
+        <div class="tip-desc">작은 기능 하나를 "테스트 먼저 → 구현" 순서로 만들어보기. AI가 만든 테스트를 직접 읽고 의미 있는지 확인</div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-tag tag-gemini">3주차</div>
+        <div class="tip-title">자동화 추가</div>
+        <div class="tip-desc">PostWrite Hook으로 파일 저장 시 테스트 자동 실행 셋업. 이제 AI가 코드를 수정하면 결과가 자동으로 피드백됩니다</div>
+      </div>
+      <div class="tip-card">
+        <div class="tip-tag tag-all">4주차</div>
+        <div class="tip-title">회고 + 개선</div>
+        <div class="tip-desc">AI가 가장 많이 실수한 패턴을 CLAUDE.md 규칙으로 추가. 팀원과 공유 → 다음 달 반복</div>
+      </div>
+    </div>
+
+    <div class="insight" style="margin-top:12px">
+      <span class="insight-icon">🎯</span>
+      <div><strong>자동화 수준의 기준:</strong> AI에게 일을 시키고 나서 <em>직접 검증하지 않아도 되는 비율</em>이 얼마나 되는가. Hook, 테스트, 자동 리뷰가 대신 검증해줄수록 높은 수준입니다. 목표는 "AI를 믿는 것"이 아니라 <strong>"믿지 않아도 되는 구조를 만드는 것"</strong>입니다.</div>
+    </div>
+  </section>
+
+  <!-- 참고 자료 -->
+  <section class="card" id="refs">
+    <div class="sh"><span class="sh-num">10</span><h2>참고 자료</h2></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>주제</th><th>링크</th><th>설명</th></tr></thead>
+        <tbody>
+          <tr><td>CLAUDE.md 공식</td><td><a href="https://code.claude.com/docs/en/best-practices" target="_blank">code.claude.com</a></td><td>Claude Code 베스트 프랙티스</td></tr>
+          <tr><td>Hooks 공식</td><td><a href="https://code.claude.com/docs/en/hooks" target="_blank">code.claude.com/hooks</a></td><td>Hooks 레퍼런스 문서</td></tr>
+          <tr><td>Sub-agents 공식</td><td><a href="https://code.claude.com/docs/en/sub-agents" target="_blank">code.claude.com/sub-agents</a></td><td>Sub-agents 생성 가이드</td></tr>
+          <tr><td>MCP 공식</td><td><a href="https://code.claude.com/docs/en/mcp" target="_blank">code.claude.com/mcp</a></td><td>MCP 통합 가이드</td></tr>
+          <tr><td>GitHub Actions 공식</td><td><a href="https://code.claude.com/docs/en/github-actions" target="_blank">code.claude.com/github-actions</a></td><td>GitHub Actions 연동</td></tr>
+          <tr><td>AGENTS.md 공식 (Codex)</td><td><a href="https://developers.openai.com/codex/guides/agents-md" target="_blank">developers.openai.com</a></td><td>Codex 지시서 파일 가이드</td></tr>
+          <tr><td>GEMINI.md 공식</td><td><a href="https://geminicli.com/docs/cli/gemini-md/" target="_blank">geminicli.com</a></td><td>Gemini CLI 지시서 파일</td></tr>
+          <tr><td>Dynamic Workflows (한국어)</td><td><a href="https://javaexpert.tistory.com/1770" target="_blank">javaexpert.tistory.com</a></td><td>Claude Code 오케스트레이션 패턴 설명</td></tr>
+          <tr><td>Harness Engineering</td><td><a href="https://github.com/revfactory/harness" target="_blank">github.com/revfactory/harness</a></td><td>에이전트 팀 아키텍처 자동 생성</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="rf">
+    <a href="report_v9.html">← V9 상호 코드 리뷰</a>
+    <a href="index.html">전체 요약 →</a>
+  </footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>WeatherNow AI 비교 실험</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+:root {
+  --claude:   #C2622A;
+  --codex:    #0B8A5E;
+  --gemini:   #1A4FDB;
+  --human:    #5B21B6;
+  --ink:      #111111;
+  --bg:       #F5F5F5;
+  --surface:  #FFFFFF;
+  --border:   #E2E2E2;
+  --muted:    #646464;
+  --faint:    #F0F0F0;
+  --mono:     'JetBrains Mono', monospace;
+}
+
+body {
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 15.5px;
+  line-height: 1.8;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ── NAV ── */
+.nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(255,255,255,.96);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  height: 48px; padding: 0 36px; gap: 0;
+}
+.nav-logo {
+  font-size: 13px; font-weight: 700; color: var(--ink);
+  padding-right: 20px; border-right: 1px solid var(--border);
+  white-space: nowrap; flex-shrink: 0;
+}
+.nav-links { display: flex; gap: 2px; padding-left: 12px; overflow-x: auto; scrollbar-width: none; }
+.nav-links::-webkit-scrollbar { display: none; }
+.nav-link {
+  text-decoration: none; font-size: 13px; font-weight: 500;
+  color: var(--muted); padding: 5px 11px; border-radius: 4px;
+  white-space: nowrap; transition: background .12s, color .12s;
+}
+.nav-link:hover { background: var(--faint); color: var(--ink); }
+.nav-link.active { background: var(--ink); color: #fff; }
+.nav-link.hl { color: var(--human); }
+.nav-link.hl:hover { background: #F3EEFF; }
+
+/* ── HERO ── */
+.hero {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 60px 36px 52px;
+}
+.hero-inner { max-width: 1100px; margin: 0 auto; }
+.hero-date {
+  font-size: 12px; font-weight: 500; color: var(--muted);
+  margin-bottom: 18px; letter-spacing: .3px;
+}
+.hero-h1 {
+  font-size: clamp(32px, 4.2vw, 52px);
+  font-weight: 800; line-height: 1.2;
+  letter-spacing: -.5px; color: var(--ink);
+  max-width: 760px; margin-bottom: 18px;
+}
+.hero-sub {
+  font-size: 16px; color: var(--muted);
+  line-height: 1.85; max-width: 580px; margin-bottom: 28px;
+}
+.hero-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.hero-badge {
+  font-size: 12px; font-weight: 500;
+  padding: 3px 10px; border-radius: 3px;
+  border: 1px solid var(--border); color: var(--muted);
+}
+.hero-badge.c { color: var(--claude); border-color: rgba(194,98,42,.25); }
+.hero-badge.x { color: var(--codex);  border-color: rgba(11,138,94,.25); }
+.hero-badge.g { color: var(--gemini); border-color: rgba(26,79,219,.25); }
+
+/* ── STAT BAR ── */
+.stat-bar { background: var(--surface); border-bottom: 1px solid var(--border); }
+.stat-inner {
+  max-width: 1100px; margin: 0 auto; padding: 0 36px;
+  display: grid; grid-template-columns: repeat(5,1fr);
+}
+.stat-item {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; text-align: center;
+  padding: 20px 8px 18px; border-right: 1px solid var(--border);
+}
+.stat-item:last-child { border-right: none; }
+.stat-n {
+  font-family: var(--mono); font-size: 24px; font-weight: 700;
+  color: var(--ink); line-height: 1; letter-spacing: -.5px;
+}
+.stat-l {
+  font-size: 11px; font-weight: 500; color: var(--muted);
+  margin-top: 5px; letter-spacing: .1px;
+}
+
+/* ── WRAP ── */
+.wrap { max-width: 1100px; margin: 0 auto; padding: 48px 36px 100px; }
+
+/* ── SECTION HEAD ── */
+.sec-head {
+  display: flex; align-items: baseline; gap: 12px;
+  margin-bottom: 22px; padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.sec-n { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--muted); }
+.sec-t { font-size: 19px; font-weight: 700; color: var(--ink); }
+.sec-sub { font-size: 13px; color: var(--muted); margin-left: auto; }
+
+/* ── CARDS (generic) ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 28px 32px; margin-bottom: 14px;
+}
+
+/* ── VERDICT ── */
+.verdict {
+  background: var(--surface); border: 1px solid var(--border);
+  border-left: 3px solid var(--ink); border-radius: 6px;
+  padding: 26px 30px; margin-bottom: 12px;
+  display: grid; grid-template-columns: 1fr auto; gap: 28px; align-items: center;
+}
+.verdict-text {
+  font-size: 17px; font-weight: 500; line-height: 1.75; color: var(--ink);
+}
+.verdict-text strong { font-weight: 800; }
+.verdict-badge {
+  display: flex; flex-direction: column; gap: 3px;
+  min-width: 110px; border-left: 1px solid var(--border);
+  padding-left: 22px; flex-shrink: 0;
+}
+.vb-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+.vb-value { font-size: 22px; font-weight: 800; color: var(--ink); }
+
+/* ── HUMAN BANNER ── */
+.human-banner {
+  background: var(--surface); border: 1px solid var(--border);
+  border-left: 3px solid var(--human); border-radius: 6px;
+  padding: 26px 30px; margin-bottom: 12px;
+  display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center;
+  position: relative;
+}
+.hb-tag { font-size: 11px; font-weight: 700; color: var(--human); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; }
+.hb-title { font-size: 18px; font-weight: 700; color: var(--ink); line-height: 1.4; margin-bottom: 5px; }
+.hb-desc { font-size: 14.5px; color: var(--muted); line-height: 1.75; }
+.hb-nums { display: flex; gap: 20px; flex-shrink: 0; align-items: center; }
+.hb-num { text-align: center; }
+.hb-n { font-family: var(--mono); font-size: 24px; font-weight: 700; color: var(--ink); line-height: 1; }
+.hb-n.dim { color: var(--muted); font-size: 18px; }
+.hb-k { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.hb-vs { font-size: 12px; color: var(--muted); font-weight: 500; }
+.hb-link {
+  display: inline-flex; align-items: center; gap: 5px;
+  text-decoration: none; background: var(--ink); color: #fff;
+  padding: 8px 16px; border-radius: 4px; font-size: 13px;
+  font-weight: 600; margin-top: 14px; transition: opacity .15s;
+}
+.hb-link:hover { opacity: .8; }
+
+/* ── SECTION BLOCK ── */
+.section { margin-bottom: 56px; }
+
+/* ── PHASE GRID ── */
+.phase-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.phase-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+  overflow: hidden; display: flex; flex-direction: column; transition: border-color .15s;
+}
+.phase-card:hover { border-color: #999; }
+.phase-shot { aspect-ratio: 9/16; background: #1A1A1A; overflow: hidden; border-bottom: 1px solid var(--border); }
+.phase-shot img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
+.phase-body { padding: 20px 22px; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.phase-n { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--muted); }
+.phase-title { font-size: 17px; font-weight: 700; color: var(--ink); line-height: 1.3; }
+.phase-desc { font-size: 14px; color: var(--muted); line-height: 1.75; flex: 1; }
+.phase-result {
+  font-size: 13.5px; color: var(--muted);
+  background: var(--faint); border: 1px solid var(--border);
+  border-radius: 4px; padding: 8px 12px; line-height: 1.65;
+}
+.phase-link {
+  text-decoration: none; font-size: 13.5px; font-weight: 700; color: var(--ink);
+  border-bottom: 1.5px solid var(--border); padding-bottom: 1px;
+  align-self: flex-start; transition: border-color .15s;
+}
+.phase-link:hover { border-color: var(--ink); }
+
+/* ── DATA TABLE ── */
+.tbl-wrap { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 10px; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 14.5px; background: var(--surface); }
+.tbl thead th {
+  padding: 10px 18px 9px; text-align: left;
+  background: var(--faint); color: var(--muted);
+  font-size: 11px; font-weight: 600; letter-spacing: .5px;
+  text-transform: uppercase; white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+.tbl thead th.cl { color: var(--claude); }
+.tbl thead th.cd { color: var(--codex); }
+.tbl thead th.gm { color: var(--gemini); }
+.tbl tbody td { padding: 12px 18px; border-bottom: 1px solid var(--border); vertical-align: middle; line-height: 1.6; }
+.tbl tbody tr:last-child td { border-bottom: none; }
+.tbl tbody tr:hover td { background: var(--faint); }
+.tbl td.rk { font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap; width: 130px; }
+.tbl td.win { font-weight: 700; color: var(--ink); }
+.tbl .mono { font-family: var(--mono); font-size: 12.5px; }
+.badge { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 3px; border: 1px solid var(--border); color: var(--muted); background: var(--surface); }
+.badge.ok   { color: var(--ink); }
+.badge.warn { color: var(--muted); }
+.badge.err  { color: var(--muted); }
+.note { font-size: 14px; color: var(--muted); border-left: 2px solid var(--border); padding-left: 12px; margin-top: 10px; line-height: 1.75; }
+
+/* ── SCORE BARS ── */
+.scores { margin-bottom: 12px; }
+.score-row {
+  display: flex; align-items: center; gap: 16px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 14px 18px; margin-bottom: 8px;
+}
+.score-who { display: flex; align-items: center; gap: 8px; width: 90px; flex-shrink: 0; }
+.score-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.score-dot.cl { background: var(--claude); }
+.score-dot.cd { background: var(--codex); }
+.score-dot.gm { background: var(--gemini); }
+.score-name { font-size: 14px; font-weight: 700; color: var(--ink); }
+.score-rank { font-family: var(--mono); font-size: 11px; color: var(--muted); width: 20px; text-align: center; flex-shrink: 0; }
+.score-track { flex: 1; height: 5px; background: var(--faint); border-radius: 2px; overflow: hidden; }
+.score-fill { height: 100%; border-radius: 2px; transition: width .6s cubic-bezier(.25,.46,.45,.94); }
+.score-fill.cl { background: var(--claude); }
+.score-fill.cd { background: var(--codex); }
+.score-fill.gm { background: var(--gemini); }
+.score-pct { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--ink); width: 44px; text-align: right; flex-shrink: 0; }
+.score-tags { display: flex; gap: 5px; flex-wrap: wrap; flex: 1; }
+.score-tag { font-size: 11.5px; font-weight: 500; padding: 2px 8px; border-radius: 3px; color: var(--muted); background: var(--surface); border: 1px solid var(--border); }
+.score-tag.bad { color: var(--ink); font-weight: 600; }
+
+/* ── GUIDE PROMO ── */
+.guide-promo {
+  background: var(--surface); border: 1px solid var(--border);
+  border-left: 3px solid var(--ink); border-radius: 6px;
+  padding: 22px 26px; display: flex; align-items: center;
+  gap: 24px; justify-content: space-between; margin-top: 14px;
+}
+.gp-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+.gp-title { font-size: 17px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+.gp-desc { font-size: 14.5px; color: var(--muted); line-height: 1.8; }
+.gp-btn {
+  text-decoration: none; background: var(--ink); color: #fff;
+  padding: 9px 18px; border-radius: 4px; font-size: 13px;
+  font-weight: 600; white-space: nowrap; flex-shrink: 0; transition: opacity .15s;
+}
+.gp-btn:hover { opacity: .8; }
+
+/* ── AI CARDS ── */
+.ai-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+.ai-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.ai-card-head {
+  padding: 14px 18px 12px; display: flex; align-items: center;
+  gap: 9px; border-bottom: 1px solid var(--border);
+}
+.ai-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.ai-dot.cl { background: var(--claude); }
+.ai-dot.cd { background: var(--codex); }
+.ai-dot.gm { background: var(--gemini); }
+.ai-name { font-size: 14px; font-weight: 700; color: var(--ink); }
+.ai-model { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-left: auto; }
+.ai-card-body { padding: 16px 18px; }
+.ai-summary { font-size: 15px; color: var(--ink); line-height: 1.75; margin-bottom: 10px; }
+.ai-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+.ai-tag { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 3px; border: 1px solid var(--border); color: var(--muted); background: var(--surface); }
+.ai-tag.good { color: var(--ink); border-color: var(--border); }
+.ai-tag.bad  { color: var(--ink); font-weight: 700; }
+
+/* ── GROWTH CHART ── */
+.growth-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+.growth-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.growth-head { display: flex; align-items: center; gap: 8px; padding: 13px 18px; border-bottom: 1px solid var(--border); }
+.growth-name { font-size: 14px; font-weight: 700; }
+.growth-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+.growth-row { display: flex; align-items: center; gap: 10px; }
+.growth-label { font-size: 11.5px; font-weight: 600; color: var(--muted); width: 18px; flex-shrink: 0; }
+.growth-track { flex: 1; height: 6px; background: var(--faint); border-radius: 2px; overflow: hidden; }
+.growth-fill { height: 100%; border-radius: 2px; background: var(--ink); transition: width .6s cubic-bezier(.25,.46,.45,.94); }
+.growth-val { font-family: var(--mono); font-size: 12.5px; font-weight: 700; color: var(--ink); width: 52px; text-align: right; }
+.growth-diff { font-size: 11px; color: var(--muted); width: 48px; text-align: right; }
+.growth-note { font-size: 14px; color: var(--muted); margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--border); line-height: 1.7; }
+
+/* ── V3 EVAL TABLE ── */
+.eval-wrap { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 14px; }
+.eval-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.eval-table thead th { padding: 9px 16px 8px; background: var(--faint); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); border-bottom: 1px solid var(--border); text-align: left; }
+.eval-table thead th.cl { color: var(--claude); }
+.eval-table thead th.cd { color: var(--codex); }
+.eval-table thead th.gm { color: var(--gemini); }
+.eval-table tbody td { padding: 10px 16px; border-bottom: 1px solid var(--border); }
+.eval-table tbody tr:last-child td { border-bottom: none; font-weight: 700; background: var(--faint); }
+.eval-table td.crit { font-size: 13.5px; color: var(--muted); font-weight: 500; }
+.eval-table td.score { font-family: var(--mono); font-weight: 700; color: var(--ink); }
+.eval-table td.score.top { color: var(--codex); }
+
+/* ── READ GUIDE ── */
+.read-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.read-item { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 20px 22px; }
+.read-n { font-family: var(--mono); font-size: 28px; font-weight: 700; color: var(--faint); line-height: 1; margin-bottom: 10px; -webkit-text-stroke: 1.5px var(--border); }
+.read-title { font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 5px; }
+.read-desc { font-size: 13.5px; color: var(--muted); line-height: 1.7; }
+
+/* ── FOOTER ── */
+.footer { background: var(--surface); border-top: 1px solid var(--border); padding: 22px 36px; font-size: 12px; color: var(--muted); text-align: center; }
+
+/* ── REVEAL ── */
+.reveal { opacity: 0; transform: translateY(16px); transition: opacity .45s ease, transform .45s ease; }
+.reveal.visible { opacity: 1; transform: none; }
+
+/* ── EVENTS GRID ── */
+.events-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.ev-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 18px 20px; }
+.ev-tag { display: inline-flex; font-size: 10.5px; font-weight: 700; letter-spacing: .3px; padding: 2px 8px; border-radius: 3px; margin-bottom: 8px; border: 1px solid transparent; }
+.claude-tag { color: var(--claude); background: rgba(194,98,42,.08); border-color: rgba(194,98,42,.2); }
+.codex-tag  { color: var(--codex);  background: rgba(11,138,94,.08);  border-color: rgba(11,138,94,.2); }
+.gemini-tag { color: var(--gemini); background: rgba(26,79,219,.08);  border-color: rgba(26,79,219,.2); }
+.ev-title { font-size: 15px; font-weight: 700; color: var(--ink); margin-bottom: 6px; line-height: 1.4; }
+.ev-desc { font-size: 14px; color: var(--muted); line-height: 1.75; }
+
+/* ── VERDICT BOX ── */
+.vbox { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 18px 20px; }
+.vbox-rank { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 6px; }
+.vbox-name { font-size: 17px; font-weight: 800; color: var(--ink); margin-bottom: 6px; }
+.vbox-desc { font-size: 14.5px; color: var(--muted); line-height: 1.8; }
+
+/* ── LEARN BOX ── */
+.learn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.learn-item { background: var(--faint); border: 1px solid var(--border); border-radius: 6px; padding: 18px 20px; }
+.learn-n { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+.learn-body { font-size: 15px; line-height: 1.85; color: var(--ink); }
+
+/* ── AI CARD ARC ── */
+.ai-arc { margin-top: 10px; font-size: 13.5px; color: var(--muted); line-height: 1.75; border-top: 1px solid var(--border); padding-top: 10px; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 860px) {
+  .hero { padding: 40px 20px 36px; }
+  .nav { padding: 0 20px; }
+  .stat-inner { padding: 0 20px; grid-template-columns: repeat(3,1fr); }
+  .wrap { padding: 36px 20px 80px; }
+  .phase-grid, .ai-grid, .growth-grid, .events-grid, .learn-grid { grid-template-columns: 1fr; }
+  .verdict, .human-banner { grid-template-columns: 1fr; }
+  .verdict-badge { border-left: none; border-top: 1px solid var(--border); padding-left: 0; padding-top: 14px; flex-direction: row; align-items: baseline; gap: 10px; }
+  .hb-nums { flex-direction: row; }
+  .guide-promo { flex-direction: column; align-items: flex-start; }
+  .score-tags { display: none; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">WeatherNow 실험</div>
+  <div class="nav-links">
+    <a class="nav-link" href="report.html">V1 초기 생성</a>
+    <a class="nav-link" href="report_v2.html">V2 기능 개선</a>
+    <a class="nav-link" href="report_v3.html">V3 자율 혁신</a>
+    <a class="nav-link" href="report_v4.html">V4 실제 API</a>
+    <a class="nav-link" href="report_v5.html">V5 단위 테스트</a>
+    <a class="nav-link" href="report_v6.html">V6 버그 디버깅</a>
+    <a class="nav-link" href="report_v7.html">V7 Room DB</a>
+    <a class="nav-link" href="report_v8.html">V8 WorkManager</a>
+    <a class="nav-link" href="report_v9.html">V9 상호 리뷰</a>
+    <a class="nav-link" href="report_human.html">직접 구현 vs AI</a>
+    <a class="nav-link" href="report_tips.html">더 잘 쓰는 방법</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="hero-inner">
+    <h1 class="hero-h1">같은 앱을 네 AI에게 맡기면<br>무엇이 달라질까</h1>
+    <p class="hero-sub">Claude Code · OpenAI Codex · Gemini CLI · Cursor Agent에 동일한 날씨 앱 스펙을 주고 V1부터 V9까지 9단계를 비교했습니다.</p>
+    <div class="hero-badges">
+      <span class="hero-badge c">Claude Code</span>
+      <span class="hero-badge x">OpenAI Codex</span>
+      <span class="hero-badge g">Gemini CLI</span>
+      <span class="hero-badge" style="color:#111827;border-color:rgba(17,24,39,.25);">Cursor Agent</span>
+    </div>
+  </div>
+</header>
+
+<div class="stat-bar">
+  <div class="stat-inner">
+    <div class="stat-item">
+      <div class="stat-n">9단계</div>
+      <div class="stat-l">V1 → V2 → V3 → V4 → V5 → V6 → V7 → V8 → V9</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-n">Gemini</div>
+      <div class="stat-l">V1~V6 전 단계 최단 · V7부터 Codex 역전</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-n">Codex</div>
+      <div class="stat-l">V4 토큰 효율 Claude 대비 57배 절감</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-n">×14.4</div>
+      <div class="stat-l">사람 vs AI(Gemini) 속도차</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-n">−178줄</div>
+      <div class="stat-l">Codex V3 리팩터링</div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- 결론 먼저 -->
+  <div style="background:var(--ink);color:#fff;border-radius:8px;padding:28px 32px;margin-bottom:12px">
+    <p style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;opacity:.45;margin-bottom:18px">결론 먼저 &nbsp;·&nbsp; 9단계 요약</p>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px">
+      <div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;opacity:.4;margin-bottom:7px">속도</div>
+        <div style="font-size:17px;font-weight:800;margin-bottom:5px">Gemini</div>
+        <div style="font-size:14px;opacity:.8;line-height:1.7">전 단계 최단. V2 149초로 Claude(360초) 대비 2.4배 빠름</div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;opacity:.4;margin-bottom:7px">코드 품질 · 효율</div>
+        <div style="font-size:17px;font-weight:800;margin-bottom:5px">Codex</div>
+        <div style="font-size:14px;opacity:.8;line-height:1.7">V4 토큰 57배 절감. DIP(의존성 역전 원칙) 패턴 일관 적용. V5 자가수정 성공</div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;opacity:.4;margin-bottom:7px">설계의 파급효과</div>
+        <div style="font-size:17px;font-weight:800;margin-bottom:5px">V4가 V5~V8 결정</div>
+        <div style="font-size:14px;opacity:.8;line-height:1.7">Claude V4에서 Repository 레이어를 분리하자 V5 테스트가 140줄로 끝났습니다. Codex는 ViewModel에 통합했고 V5 테스트에 245줄이 필요했습니다. 설계 하나가 이후 모든 단계의 복잡도를 결정했습니다.</div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;opacity:.4;margin-bottom:7px">핵심 발견</div>
+        <div style="font-size:17px;font-weight:800;margin-bottom:5px">빌드 ≠ 실동작</div>
+        <div style="font-size:14px;opacity:.8;line-height:1.7">V8 Gemini는 빌드(<code>assembleDebug</code>: 안드로이드 앱 빌드 명령어)가 성공했지만 실기기에서 즉시 크래시. <code>runBlocking</code> 안티패턴과 플러그인 누락은 컴파일러가 잡지 못합니다. 빌드 성공이 곧 앱 동작 보장이 아닙니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 이 실험을 하는 이유 -->
+  <div class="card" style="margin-bottom:12px;padding:24px 30px;border-left:3px solid var(--ink);">
+    <p style="font-size:11px;font-weight:700;letter-spacing:.8px;color:var(--muted);text-transform:uppercase;margin-bottom:12px">이 실험을 하는 이유</p>
+    <p style="font-size:15px;line-height:1.9;color:var(--ink);max-width:880px">같은 스펙을 주면 AI마다 다른 결정을 내립니다. 그 차이는 코드를 처음 만들 때는 잘 보이지 않습니다. 그런데 그 코드 위에 기능을 추가하고, 실제 API를 붙이고, 단위 테스트를 작성하고, 버그를 고치는 작업이 이어지면 초기 결정의 파급효과가 점점 드러납니다. 실제 API 연동 단계(V4)에서 Claude만 네트워크 로직을 별도 클래스로 분리했고, 그 한 줄의 설계 차이가 이후 테스트 단계(V5)에서 코드량을 <strong>Claude 140줄 · Codex 245줄</strong>로 갈라놓았습니다. 백그라운드 알림 단계(V8)에서 Gemini는 빌드를 통과하고 실기기에서 즉시 크래시했습니다. 이 실험은 이런 차이가 어디서 생기고 어떻게 누적되는지 추적하기 위해, 동일한 날씨 앱에 동일한 프롬프트를 주고 앱 생성부터 상호 코드 리뷰까지 <strong>9단계를 연속으로</strong> 진행했습니다.</p>
+  </div>
+
+  <!-- 종합 요약 -->
+  <div class="card reveal" style="margin-bottom:12px;padding:24px 30px;">
+    <p style="font-size:11px;font-weight:700;letter-spacing:.8px;color:var(--muted);text-transform:uppercase;margin-bottom:14px">종합 요약 — V1 → V9</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+      <div style="border:1px solid var(--border);border-left:3px solid var(--gemini);border-radius:6px;padding:14px 16px;">
+        <div style="font-size:11px;font-weight:700;color:var(--gemini);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px">속도 · 구현력</div>
+        <p style="font-size:14px;line-height:1.75;color:var(--ink)"><strong>Gemini가 V1~V6 최단</strong>(평균 217초). V3에서 날씨 데이터를 자연어로 해석해주는 인사이트 카드와 온도 기반 배경색 같은 스마트 기능을 만들었고, V4 실 API 연동 후에도 이 기능들을 유일하게 유지했습니다. V7부터는 Codex에게 역전됐습니다.</p>
+      </div>
+      <div style="border:1px solid var(--border);border-left:3px solid var(--claude);border-radius:6px;padding:14px 16px;">
+        <div style="font-size:11px;font-weight:700;color:var(--claude);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px">아키텍처 · 설계</div>
+        <p style="font-size:14px;line-height:1.75;color:var(--ink)"><strong>Claude의 API 연동 단계(V4) Repository 분리</strong>가 단위 테스트 단계(V5)를 140줄로 압축했습니다. Repository는 API 호출 로직을 ViewModel(화면 로직을 담당하는 클래스)과 분리해 테스트에서 가짜 데이터(목 데이터·테스트용 가짜 데이터)로 교체할 수 있게 해주는 레이어입니다. <strong>V4 설계 결정 하나가 V5 복잡도를 직접 결정</strong>한 핵심 사례입니다.</p>
+      </div>
+      <div style="border:1px solid var(--border);border-left:3px solid var(--codex);border-radius:6px;padding:14px 16px;">
+        <div style="font-size:11px;font-weight:700;color:var(--codex);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px">코드 품질 · 검증</div>
+        <p style="font-size:14px;line-height:1.75;color:var(--ink)"><strong>Codex가 코드 품질 1위.</strong> V5에서 URLStreamHandlerFactory로 네트워크 레이어를 직접 가로채는 독창적인 테스트 방식을 썼습니다. V6 버그 디버깅에서는 세 AI 중 유일하게 수정 후 단위 테스트까지 직접 실행해 검증했습니다.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 직접 구현 vs AI -->
+  <div class="human-banner reveal">
+    <div>
+      <div class="hb-tag">직접 구현 — V1·V2·V3 완료</div>
+      <h2 class="hb-title">V3까지 누적 2시간 36분 — AI(Gemini)보다 ×14.4 느렸습니다</h2>
+      <p class="hb-desc">V1(×12.5) → V2(×21.6) → V3(×11.6). V3에서 배율이 좁혀진 점이 흥미롭습니다. 스마트 기능("지금 나갈까?" 외출 어드바이저)을 35분 57초에 구현했습니다.</p>
+      <a class="hb-link" href="report_human.html">비교 보고서 보기</a>
+    </div>
+    <div class="hb-nums">
+      <div class="hb-num">
+        <div class="hb-n">2:36:12</div>
+        <div class="hb-k">누적 (V1+V2+V3)</div>
+      </div>
+      <div class="hb-vs">vs</div>
+      <div class="hb-num">
+        <div class="hb-n dim">652초</div>
+        <div class="hb-k">Gemini 누적</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 단계별 보고서 -->
+  <section class="section reveal">
+    <div class="sec-head">
+      <span class="sec-n">01</span>
+      <h2 class="sec-t">단계별 보고서</h2>
+      <span class="sec-sub">V1 → V2 → V3 순으로 읽기를 권장합니다</span>
+    </div>
+    <div class="phase-grid">
+      <article class="phase-card">
+        <div class="phase-shot"><img src="../screenshots/v1/gemini/01-top.png" alt="V1" loading="lazy"></div>
+        <div class="phase-body">
+          <div class="phase-n">01</div>
+          <h3 class="phase-title">처음부터 앱 만들기</h3>
+          <p class="phase-desc">동일한 프롬프트에서 각 AI가 어떤 구조와 UI를 선택하는지 비교했습니다. 파일 분리 방식, 레이어 구조, 한국어 도시명 처리 방식이 AI마다 달랐습니다. Codex는 한국어 깨짐 버그가 발생해 세 AI 중 유일하게 V1 기능 검증에 실패했습니다.</p>
+          <div class="phase-result">Gemini 318초 최단 · Codex 자동 빌드 · Claude 구조 우수</div>
+          <a class="phase-link" href="report.html">V1 보고서 보기</a>
+        </div>
+      </article>
+      <article class="phase-card">
+        <div class="phase-shot"><img src="../screenshots/v2/codex/01-top.png" alt="V2" loading="lazy"></div>
+        <div class="phase-body">
+          <div class="phase-n">02</div>
+          <h3 class="phase-title">기존 코드 위에 기능 추가</h3>
+          <p class="phase-desc">V1 결과물을 건드리지 않고 그 위에 시간별 예보, 상세 날씨 정보, 새로고침, 즐겨찾기 기능을 추가했습니다. AI가 자신이 만든 코드를 다시 읽고 확장하는 능력을 측정했습니다. Codex는 V1 한국어 깨짐도 이 단계에서 자가 수정했습니다.</p>
+          <div class="phase-result">네 AI 모두 기능 충족 · Gemini 149.4초 최단</div>
+          <a class="phase-link" href="report_v2.html">V2 보고서 보기</a>
+        </div>
+      </article>
+      <article class="phase-card">
+        <div class="phase-shot"><img src="../screenshots/v3/gemini/01-top.png" alt="V3" loading="lazy"></div>
+        <div class="phase-body">
+          <div class="phase-n">03</div>
+          <h3 class="phase-title">AI가 스스로 기능 선택</h3>
+          <p class="phase-desc">"기능을 하나 더 추가해라. 무엇을 추가할지는 네가 정해라"는 지시만 주었습니다. AI가 직접 기능을 기획하고 구현하는 자율 단계입니다. Gemini가 인사이트 카드·온도 기반 배경색으로 가장 눈에 띄는 결과를 냈고, Codex는 기능 추가 대신 코드를 178줄 줄이는 리팩터링을 선택해 세 AI 중 유일하게 코드량이 감소했습니다.</p>
+          <div class="phase-result">Gemini 인사이트 카드 + 온도 기반 배경 가장 두드러짐</div>
+          <a class="phase-link" href="report_v3.html">V3 보고서 보기</a>
+        </div>
+      </article>
+      <article class="phase-card">
+        <div class="phase-shot"><img src="../screenshots/v4/gemini/01-top.png" alt="V4" loading="lazy"></div>
+        <div class="phase-body">
+          <div class="phase-n">04</div>
+          <h3 class="phase-title">실제 API 연동</h3>
+          <p class="phase-desc">하드코딩된 가짜 날씨 데이터를 Open-Meteo 실시간 API로 교체했습니다. Claude와 Codex는 추가 라이브러리 없이 표준 라이브러리(java.net)를 썼고, Gemini는 Retrofit + OkHttp를 선택해 아키텍처가 갈렸습니다. 이 선택이 V5 테스트 복잡도를 직접 결정했습니다.</p>
+          <div class="phase-result">Claude·Codex stdlib 전용 · Gemini Retrofit · V3 스마트 기능 Gemini만 V4에서도 유지</div>
+          <a class="phase-link" href="report_v4.html">V4 보고서 보기</a>
+        </div>
+      </article>
+      <article class="phase-card">
+        <div class="phase-shot" style="background:#1a1a2e;display:flex;align-items:center;justify-content:center;min-height:160px;">
+          <span style="font-size:40px;">🧪</span>
+        </div>
+        <div class="phase-body">
+          <div class="phase-n">05</div>
+          <h3 class="phase-title">단위 테스트 작성</h3>
+          <p class="phase-desc">V4 앱에 단위 테스트를 추가했습니다. 세 AI 모두 테스트 5개를 통과시켰지만 방법이 달랐습니다. Claude(140줄) vs Codex(245줄)의 차이는 V4 아키텍처에서 비롯됐습니다. Codex는 URLStreamHandlerFactory로 네트워크 레이어를 직접 가로채는 독창적인 방식을 써 이후 V9에서 세 AI 모두의 극찬을 받았습니다.</p>
+          <div class="phase-result">세 AI 모두 5/5 통과 · Codex URLStreamHandler 독창 접근 · Gemini 최단 231초</div>
+          <a class="phase-link" href="report_v5.html">V5 보고서 보기</a>
+        </div>
+      </article>
+      <article class="phase-card">
+        <div class="phase-shot" style="background:#1a1a2e;display:flex;align-items:center;justify-content:center;min-height:160px;">
+          <span style="font-size:40px;">🐛</span>
+        </div>
+        <div class="phase-body">
+          <div class="phase-n">06</div>
+          <h3 class="phase-title">버그 디버깅</h3>
+          <p class="phase-desc">V4 코드에 의도적으로 버그 5개를 심고 "찾아서 고쳐라"는 지시만 주었습니다. 발견율은 세 AI 모두 5/5로 동일했습니다. 그러나 Codex만 수정 후 단위 테스트를 자체 실행해 결과를 검증했고, Gemini는 JAVA_HOME 환경변수 오류로 빌드 검증 자체를 완료하지 못했습니다.</p>
+          <div class="phase-result">전원 5/5 발견 · Codex 단위 테스트 자체 실행 · Gemini 빌드 검증 실패</div>
+          <a class="phase-link" href="report_v6.html">V6 보고서 보기</a>
+        </div>
+      </article>
+      <article class="phase-card">
+        <div class="phase-shot" style="background:#1a1a2e;display:flex;align-items:center;justify-content:center;min-height:160px;">
+          <span style="font-size:40px;">🗄️</span>
+        </div>
+        <div class="phase-body">
+          <div class="phase-n">07</div>
+          <h3 class="phase-title">Room DB 영속성</h3>
+          <p class="phase-desc">즐겨찾기 도시를 앱 재시작 후에도 기억하도록 Room 데이터베이스를 추가했습니다(Room은 Android 공식 SQLite 래퍼 라이브러리). 세 AI 모두 빌드에 성공했지만 기존 V5 단위 테스트를 깨지 않는 방법이 달랐습니다. Gemini는 기존 테스트를 직접 수정했는데, V5에서 "테스트는 건드리지 말라"고 지시한 원칙을 어긴 것이었습니다.</p>
+          <div class="phase-result">전원 빌드 성공 · Codex Repository 인터페이스 설계 · Gemini 기존 테스트 수정</div>
+          <a class="phase-link" href="report_v7.html">V7 보고서 보기</a>
+        </div>
+      </article>
+      <article class="phase-card">
+        <div class="phase-shot" style="background:#1a1a2e;display:flex;align-items:center;justify-content:center;min-height:160px;">
+          <span style="font-size:40px;">🔔</span>
+        </div>
+        <div class="phase-body">
+          <div class="phase-n">08</div>
+          <h3 class="phase-title">WorkManager 백그라운드 알림</h3>
+          <p class="phase-desc">V7에 저장된 즐겨찾기 도시에 대해 WorkManager로 15분마다 날씨 알림을 발송하는 시스템을 추가했습니다(WorkManager는 Android 공식 백그라운드 작업 라이브러리). Codex는 알림 권한을 두 곳에서 이중으로 확인하는 방어적 코드를 작성했습니다. Gemini는 Worker 내부에서 runBlocking을 사용해 실기기에서 즉시 크래시가 발생했고, 직접 발견해 수정했습니다.</p>
+          <div class="phase-result">전원 빌드 성공 · Codex 이중 권한 방어 + BigTextStyle · Gemini runBlocking 안티패턴</div>
+          <a class="phase-link" href="report_v8.html">V8 보고서 보기</a>
+        </div>
+      </article>
+      <article class="phase-card">
+        <div class="phase-shot" style="background:#1a1a2e;display:flex;align-items:center;justify-content:center;min-height:160px;">
+          <span style="font-size:40px;">🔍</span>
+        </div>
+        <div class="phase-body">
+          <div class="phase-n">09</div>
+          <h3 class="phase-title">상호 코드 리뷰 (마무리)</h3>
+          <p class="phase-desc">각 AI가 다른 두 AI의 V8 최종 코드를 직접 파일로 읽고 평가했습니다. Claude → Codex에서, Codex → Claude에서, Gemini → Codex에서 각각 다른 것을 배웠습니다. 세 AI 모두가 동시에 가르치고 배우는 순환 학습 고리가 형성된 실험입니다.</p>
+          <div class="phase-result">3개 AI 상호 학습 고리 형성 · Codex FakeOpenMeteoServer 전원 최고 평가 · Gemini 샌드박스 제약 발견</div>
+          <a class="phase-link" href="report_v9.html">V9 보고서 보기</a>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 기억할 만한 사건들 -->
+  <section class="section reveal">
+    <div class="sec-head">
+      <span class="sec-n">02</span>
+      <h2 class="sec-t">기억할 만한 사건들</h2>
+      <span class="sec-sub">V1 → V9 중 패턴을 바꾼 결정과 실패</span>
+    </div>
+    <div class="events-grid">
+      <div class="ev-card">
+        <div class="ev-tag codex-tag">V1 · Codex</div>
+        <div class="ev-title">한국어 깨짐</div>
+        <div class="ev-desc">stdin(표준 입력 스트림)을 통해 프롬프트를 전달할 때 UTF-8 인코딩이 손실되어 도시명이 <code>?????</code>로 출력됨. 3개 AI 중 유일한 V1 기능 실패. V2에서 자가 수정.</div>
+      </div>
+      <div class="ev-card">
+        <div class="ev-tag gemini-tag">V1–V3 · Gemini</div>
+        <div class="ev-title">일관된 속도 우위</div>
+        <div class="ev-desc">318초(V1) → 149초(V2) → 185초(V3). 세 단계 연속 1위. 이 속도 패턴이 V8까지 이어졌습니다.</div>
+      </div>
+      <div class="ev-card">
+        <div class="ev-tag codex-tag">V3 · Codex</div>
+        <div class="ev-title">유일한 코드 감소</div>
+        <div class="ev-desc">자율 혁신 단계에서 기능 추가 대신 리팩터링 선택. V2 736줄 → V3 558줄 <strong>(-178줄)</strong>. 세 AI 중 유일.</div>
+      </div>
+      <div class="ev-card">
+        <div class="ev-tag gemini-tag">V3–V4 · Gemini</div>
+        <div class="ev-title">화면에서 보이는 스마트 기능</div>
+        <div class="ev-desc">인사이트 카드·온도 기반 배경이 실제 화면에서 즉시 확인됨. Claude·Codex V3 기능은 체감 변화 없었습니다.</div>
+      </div>
+      <div class="ev-card">
+        <div class="ev-tag claude-tag">V4 · Claude</div>
+        <div class="ev-title">Repository 레이어 분리</div>
+        <div class="ev-desc">이 설계 결정 하나가 V5 테스트 코드를 <strong>140줄</strong>로 압축. Codex(ViewModel 통합)는 245줄 필요. V4 아키텍처가 V5 복잡도를 직접 결정했습니다.</div>
+      </div>
+      <div class="ev-card">
+        <div class="ev-tag codex-tag">V5 · Codex</div>
+        <div class="ev-title">TimeoutCancellationException 자가수정</div>
+        <div class="ev-desc">테스트 3개 실패 후 원인을 스스로 진단 → <code>UnconfinedTestDispatcher</code>로 수정 성공. 실패에서 배우는 능력을 보여준 사례.</div>
+      </div>
+      <div class="ev-card">
+        <div class="ev-tag gemini-tag">V6 · Gemini</div>
+        <div class="ev-title">버그 5/5 발견, 빌드 검증 실패</div>
+        <div class="ev-desc">발견율은 전원 동일(5/5). 그러나 Gemini는 <code>JAVA_HOME</code> 환경 변수 오류로 빌드 검증을 완료하지 못함. 3개 AI 중 유일.</div>
+      </div>
+      <div class="ev-card">
+        <div class="ev-tag gemini-tag">V7–V8 · Gemini</div>
+        <div class="ev-title">연속 원칙 위반</div>
+        <div class="ev-desc">V7: 기존 테스트 직접 수정(V5 원칙 위반). V8: <code>runBlocking</code> 안티패턴 → 빌드 통과 후 실기기 크래시. 직접 발견·수정.</div>
+      </div>
+      <div class="ev-card">
+        <div class="ev-tag codex-tag">V9 · 전체</div>
+        <div class="ev-title">3개 AI 상호 리뷰 — 순환 학습</div>
+        <div class="ev-desc">Claude·Codex·Gemini가 서로의 V8 코드를 직접 읽고 평가. Codex의 <code>FakeOpenMeteoServer</code>가 세 AI 모두로부터 "가장 독창적인 테스트"로 극찬을 받았습니다. 자가 개선 계획 14개 도출.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 수치 비교 -->
+  <section class="section reveal">
+    <div class="sec-head">
+      <span class="sec-n">03</span>
+      <h2 class="sec-t">수치 비교</h2>
+      <span class="sec-sub">속도 · 핵심 결과 · AI 특성</span>
+    </div>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th></th>
+            <th class="cl">Claude</th>
+            <th class="cd">Codex</th>
+            <th class="gm">Gemini</th>
+            <th style="border-top:2px solid #111827;">Cursor</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="rk">모델</td>
+            <td class="mono" style="font-size:12px">claude-sonnet-4-6</td>
+            <td class="mono" style="font-size:12px">gpt-5.5</td>
+            <td class="mono" style="font-size:12px">gemini-3-flash</td>
+            <td class="mono" style="font-size:12px">auto (Cursor Agent)</td>
+          </tr>
+          <!-- ── 소요 시간 ── -->
+          <tr style="background:var(--faint)">
+            <td colspan="5" style="padding:7px 18px;font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)">소요 시간 (초) &nbsp;·&nbsp; Cursor는 V4 직전 무료 플랜 한도 도달로 이탈</td>
+          </tr>
+          <tr>
+            <td class="rk">V1 첫 생성</td>
+            <td class="mono">537</td>
+            <td class="mono">457</td>
+            <td class="mono win">318 — 최단</td>
+            <td class="mono">360</td>
+          </tr>
+          <tr>
+            <td class="rk">V2 기능 추가</td>
+            <td class="mono">361</td>
+            <td class="mono">315</td>
+            <td class="mono win">149 — 최단</td>
+            <td class="mono">240</td>
+          </tr>
+          <tr>
+            <td class="rk">V3 AI가 직접 선택</td>
+            <td class="mono">413</td>
+            <td class="mono">280</td>
+            <td class="mono win">185 — 최단</td>
+            <td class="mono">660</td>
+          </tr>
+          <tr>
+            <td class="rk">V4 실제 API</td>
+            <td class="mono">536</td>
+            <td class="mono">437</td>
+            <td class="mono win">426 — 최단</td>
+            <td style="color:var(--muted)">—</td>
+          </tr>
+          <tr>
+            <td class="rk">V5 테스트 작성</td>
+            <td class="mono">428</td>
+            <td class="mono">256</td>
+            <td class="mono win">231 — 최단</td>
+            <td style="color:var(--muted)">—</td>
+          </tr>
+          <tr>
+            <td class="rk">V6 버그 디버깅</td>
+            <td class="mono">506</td>
+            <td class="mono">~480</td>
+            <td class="mono win">194 — 최단</td>
+            <td style="color:var(--muted)">—</td>
+          </tr>
+          <tr>
+            <td class="rk">V7 Room DB</td>
+            <td class="mono">519</td>
+            <td class="mono win">419 — 최단</td>
+            <td class="mono">556</td>
+            <td style="color:var(--muted)">—</td>
+          </tr>
+          <tr>
+            <td class="rk">V8 백그라운드 알림</td>
+            <td class="mono">457</td>
+            <td class="mono win">410 — 최단</td>
+            <td class="mono">582</td>
+            <td style="color:var(--muted)">—</td>
+          </tr>
+          <tr>
+            <td class="rk">V9 코드 리뷰</td>
+            <td class="mono">~980</td>
+            <td class="mono win">671 — 최단</td>
+            <td class="mono">~2,400</td>
+            <td style="color:var(--muted)">—</td>
+          </tr>
+
+          <!-- ── 핵심 결과 ── -->
+          <tr style="background:var(--faint)">
+            <td colspan="5" style="padding:7px 18px;font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)">핵심 결과 — 무엇이 달랐나</td>
+          </tr>
+          <tr>
+            <td class="rk">V5 테스트 결과</td>
+            <td><span class="badge ok">5/5 통과</span></td>
+            <td><span class="badge warn">실패 → 스스로 수정 → 통과</span></td>
+            <td><span class="badge ok">5/5 통과</span></td>
+            <td style="color:var(--muted)">—</td>
+          </tr>
+          <tr>
+            <td class="rk">V6 버그 발견</td>
+            <td><span class="badge ok">5 / 5</span></td>
+            <td><span class="badge ok">5 / 5</span></td>
+            <td><span class="badge ok">5 / 5</span></td>
+            <td style="color:var(--muted)">—</td>
+          </tr>
+          <tr>
+            <td class="rk">V6 수정 후 확인</td>
+            <td><span class="badge ok">빌드만 확인</span></td>
+            <td><span class="badge ok">빌드 + 테스트 실행</span></td>
+            <td><span class="badge err">미검증 (JAVA_HOME 오류)</span></td>
+            <td style="color:var(--muted)">—</td>
+          </tr>
+          <tr>
+            <td class="rk">V7 기존 테스트 보존</td>
+            <td><span class="badge ok">DAO nullable 처리</span></td>
+            <td><span class="badge ok">Repository 인터페이스</span></td>
+            <td><span class="badge warn">기존 테스트 건드림</span></td>
+            <td style="color:var(--muted)">—</td>
+          </tr>
+          <tr>
+            <td class="rk">V8 Worker 구현 방식</td>
+            <td><span class="badge ok">suspend 정석</span></td>
+            <td><span class="badge ok">suspend + 권한 이중 확인</span></td>
+            <td><span class="badge warn">runBlocking → 실기기 크래시</span></td>
+            <td style="color:var(--muted)">—</td>
+          </tr>
+          <tr>
+            <td class="rk">V9 개선 아이디어</td>
+            <td>5개</td>
+            <td>5개</td>
+            <td>4개</td>
+            <td style="color:var(--muted)">—</td>
+          </tr>
+
+          <!-- ── AI 특성 ── -->
+          <tr style="background:var(--faint)">
+            <td colspan="5" style="padding:7px 18px;font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)">AI 특성</td>
+          </tr>
+          <tr>
+            <td class="rk">V1 빌드 자동화</td>
+            <td><span class="badge err">직접 보완 필요</span></td>
+            <td><span class="badge ok">완전 자동</span></td>
+            <td><span class="badge warn">아이콘 파일 누락</span></td>
+            <td><span class="badge ok">완전 자동</span></td>
+          </tr>
+          <tr>
+            <td class="rk">한국어 처리</td>
+            <td><span class="badge ok">정상</span></td>
+            <td><span class="badge warn">V1에서 깨짐 → V2에서 스스로 수정</span></td>
+            <td><span class="badge ok">정상</span></td>
+            <td><span class="badge ok">정상</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">Gemini는 V1~V6까지 매 단계 가장 빠릅니다. V7부터 Codex가 역전합니다. Cursor는 V4 직전 무료 플랜 한도에 도달해 이후 실험에서 빠졌습니다. Gemini V9 시간에는 재실행이 포함됩니다.</p>
+  </section>
+
+  <!-- 코드 성장 추이 -->
+  <section class="section reveal">
+    <div class="sec-head">
+      <span class="sec-n">04</span>
+      <h2 class="sec-t">코드 성장 추이</h2>
+      <span class="sec-sub">V1 → V2 → V3 Kotlin 코드 라인 수 변화</span>
+    </div>
+    <div class="growth-grid">
+      <div class="growth-card">
+        <div class="growth-head">
+          <div class="ai-dot cl"></div>
+          <span class="growth-name">Claude</span>
+          <span style="font-size:12px;color:var(--muted);margin-left:auto;">총 +55%</span>
+        </div>
+        <div class="growth-body">
+          <div class="growth-row">
+            <span class="growth-label">V1</span>
+            <div class="growth-track"><div class="growth-fill" style="width:53%"></div></div>
+            <span class="growth-val">395줄</span>
+            <span class="growth-diff"></span>
+          </div>
+          <div class="growth-row">
+            <span class="growth-label">V2</span>
+            <div class="growth-track"><div class="growth-fill" style="width:79%"></div></div>
+            <span class="growth-val">580줄</span>
+            <span class="growth-diff">+185</span>
+          </div>
+          <div class="growth-row">
+            <span class="growth-label">V3</span>
+            <div class="growth-track"><div class="growth-fill" style="width:83%"></div></div>
+            <span class="growth-val">612줄</span>
+            <span class="growth-diff">+32</span>
+          </div>
+          <p class="growth-note">V3에서 소폭 증가. 기존 구조를 크게 손대지 않고 기능을 추가하는 방식.</p>
+        </div>
+      </div>
+      <div class="growth-card">
+        <div class="growth-head">
+          <div class="ai-dot cd"></div>
+          <span class="growth-name">Codex</span>
+          <span style="font-size:12px;color:var(--muted);margin-left:auto;">+24% → <strong>V3 리팩터링</strong></span>
+        </div>
+        <div class="growth-body">
+          <div class="growth-row">
+            <span class="growth-label">V1</span>
+            <div class="growth-track"><div class="growth-fill" style="width:61%"></div></div>
+            <span class="growth-val">451줄</span>
+            <span class="growth-diff"></span>
+          </div>
+          <div class="growth-row">
+            <span class="growth-label">V2</span>
+            <div class="growth-track"><div class="growth-fill" style="width:100%"></div></div>
+            <span class="growth-val">736줄</span>
+            <span class="growth-diff">+285</span>
+          </div>
+          <div class="growth-row">
+            <span class="growth-label">V3</span>
+            <div class="growth-track"><div class="growth-fill" style="width:76%"></div></div>
+            <span class="growth-val">558줄</span>
+            <span class="growth-diff" style="color:var(--codex);font-weight:700;">−178</span>
+          </div>
+          <p class="growth-note">세 AI 중 유일하게 V3에서 코드량이 감소. 자율 혁신 단계에서 리팩터링을 선택.</p>
+        </div>
+      </div>
+      <div class="growth-card">
+        <div class="growth-head">
+          <div class="ai-dot gm"></div>
+          <span class="growth-name">Gemini</span>
+          <span style="font-size:12px;color:var(--muted);margin-left:auto;">총 +78%</span>
+        </div>
+        <div class="growth-body">
+          <div class="growth-row">
+            <span class="growth-label">V1</span>
+            <div class="growth-track"><div class="growth-fill" style="width:41%"></div></div>
+            <span class="growth-val">304줄</span>
+            <span class="growth-diff"></span>
+          </div>
+          <div class="growth-row">
+            <span class="growth-label">V2</span>
+            <div class="growth-track"><div class="growth-fill" style="width:70%"></div></div>
+            <span class="growth-val">518줄</span>
+            <span class="growth-diff">+214</span>
+          </div>
+          <div class="growth-row">
+            <span class="growth-label">V3</span>
+            <div class="growth-track"><div class="growth-fill" style="width:73%"></div></div>
+            <span class="growth-val">542줄</span>
+            <span class="growth-diff">+24</span>
+          </div>
+          <p class="growth-note">V1 가장 적은 코드로 시작. V3도 세 AI 중 가장 적은 코드 유지.</p>
+        </div>
+      </div>
+      <div class="growth-card">
+        <div class="growth-head">
+          <div class="ai-dot" style="background:#111827;"></div>
+          <span class="growth-name">Cursor</span>
+          <span style="font-size:12px;color:var(--muted);margin-left:auto;">총 +<strong>108%</strong> 전 단계 최다</span>
+        </div>
+        <div class="growth-body">
+          <div class="growth-row">
+            <span class="growth-label">V1</span>
+            <div class="growth-track"><div class="growth-fill" style="width:48%"></div></div>
+            <span class="growth-val">473줄</span>
+            <span class="growth-diff"></span>
+          </div>
+          <div class="growth-row">
+            <span class="growth-label">V2</span>
+            <div class="growth-track"><div class="growth-fill" style="width:76%"></div></div>
+            <span class="growth-val">748줄</span>
+            <span class="growth-diff">+275</span>
+          </div>
+          <div class="growth-row">
+            <span class="growth-label">V3</span>
+            <div class="growth-track"><div class="growth-fill" style="width:100%"></div></div>
+            <span class="growth-val">986줄</span>
+            <span class="growth-diff">+238</span>
+          </div>
+          <p class="growth-note">전 단계 코드량 최다. V3에서 쾌적 지수 엔진(SmartComfort.kt) 신규 추가로 11파일·986줄 달성.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 코드 품질 -->
+  <section class="section reveal">
+    <div class="sec-head">
+      <span class="sec-n">05</span>
+      <h2 class="sec-t">코드 패턴 비교</h2>
+      <span class="sec-sub">실제 코드에서 확인한 사실</span>
+    </div>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>패턴</th>
+            <th class="cl">Claude</th>
+            <th class="cd">Codex</th>
+            <th class="gm">Gemini</th>
+            <th style="border-top:2px solid #111827;">Cursor</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="rk">private Composable<br><span style="font-size:11px;color:var(--muted);font-weight:400;">Compose UI 함수를 외부에서 직접 접근 못하도록 캡슐화</span></td>
+            <td>❌</td><td>✅</td><td>❌</td><td>❌</td>
+          </tr>
+          <tr>
+            <td class="rk">순수 함수 설계<br><span style="font-size:11px;color:var(--muted);font-weight:400;">UiState(화면에 표시할 데이터를 담는 상태 객체) + callbacks</span></td>
+            <td>❌</td><td>✅</td><td>❌</td><td>✅</td>
+          </tr>
+          <tr>
+            <td class="rk">원자적 상태 업데이트<br><span style="font-size:11px;color:var(--muted);font-weight:400;">update{} 사용</span></td>
+            <td>❌</td><td>❌</td><td>✅</td><td>❌</td>
+          </tr>
+          <tr>
+            <td class="rk">computed UiState<br><span style="font-size:11px;color:var(--muted);font-weight:400;">다른 상태로부터 자동 계산되는 화면 상태</span></td>
+            <td>❌</td><td>✅</td><td>❌</td><td>✅</td>
+          </tr>
+          <tr>
+            <td class="rk">LazyColumn 성능<br><span style="font-size:11px;color:var(--muted);font-weight:400;">화면에 보이는 항목만 렌더링하는 효율적인 목록 구성</span></td>
+            <td>❌</td><td>❌</td><td>✅</td><td>❌</td>
+          </tr>
+          <tr>
+            <td class="rk">레이어 분리 구조</td>
+            <td>✅</td><td>❌</td><td>❌</td><td>❌</td>
+          </tr>
+          <tr>
+            <td class="rk">lifecycle 안전<br><span style="font-size:11px;color:var(--muted);font-weight:400;">collectAsStateWithLifecycle — 앱이 백그라운드로 가면 자동으로 수집 중단해 메모리 누수 방지</span></td>
+            <td>✅</td><td>✅</td><td>⚠️ 누수 있음</td><td>✅</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- AI별 요약 -->
+  <section class="section reveal">
+    <div class="sec-head">
+      <span class="sec-n">06</span>
+      <h2 class="sec-t">AI별 요약</h2>
+    </div>
+    <div class="ai-grid">
+      <div class="ai-card">
+        <div class="ai-card-head">
+          <div class="ai-dot cl"></div>
+          <span class="ai-name">Claude</span>
+          <span class="ai-model">claude-sonnet-4-6</span>
+        </div>
+        <div class="ai-card-body">
+          <p class="ai-summary">레이어 분리 구조가 가장 체계적입니다. V4에서 API 호출을 Repository 레이어로 분리했고, 이 결정 하나로 V5 테스트가 140줄로 끝났습니다. V8까지 코루틴에서 runBlocking을 쓰지 않는 정석 패턴을 유지했습니다. 토큰 사용량은 가장 많지만, 캐시 재사용률이 높아 실질 비용은 경쟁력 있습니다.</p>
+          <div class="ai-tags">
+            <span class="ai-tag good">구조 · 설계 일관성</span>
+            <span class="ai-tag good">지시 이행 최고</span>
+            <span class="ai-tag warn">토큰 최다</span>
+          </div>
+          <div class="ai-arc"><strong style="color:var(--ink)">V1–V9 아크:</strong> V4 Repository 설계가 V5~V9에 연쇄적으로 긍정 영향을 줬습니다. 기능 추가 속도는 가장 느리지만, 그 대신 코드베이스를 오래 건강하게 유지하는 방향을 일관되게 선택했습니다. V9 상호 리뷰에서 Codex에게 Repository DI 패턴을 배우고 Gemini에게 StateFlow 패턴을 제안했습니다.</div>
+          <div class="ai-arc" style="border-top:1px dashed var(--border);margin-top:8px;padding-top:8px;font-style:italic"><strong style="color:var(--ink);font-style:normal">실사용 느낌:</strong> 요구사항을 가장 잘 이해하고 원하는 방향으로 움직임. 단, 작업이 길어지면 토큰 한도에 자주 걸림.</div>
+        </div>
+      </div>
+      <div class="ai-card">
+        <div class="ai-card-head">
+          <div class="ai-dot cd"></div>
+          <span class="ai-name">Codex</span>
+          <span class="ai-model">gpt-5.5</span>
+        </div>
+        <div class="ai-card-body">
+          <p class="ai-summary">V1 한국어 깨짐을 V2에서 스스로 원인을 찾아 수정했습니다. V3에서는 기능 추가 대신 리팩터링을 선택해 코드를 178줄 줄인 유일한 AI입니다. V5 테스트 실패 시 원인을 스스로 진단하고 수정했으며, V7에서는 DIP(의존성 역전 원칙)를 적용해 Repository 인터페이스를 도입했습니다. 전 단계 토큰 효율 1위.</p>
+          <div class="ai-tags">
+            <span class="ai-tag good">코드 품질 1위</span>
+            <span class="ai-tag good">토큰 효율 최고</span>
+            <span class="ai-tag good">자가수정 능력</span>
+          </div>
+          <div class="ai-arc"><strong style="color:var(--ink)">V1–V9 아크:</strong> 실패에서 배우는 능력(V2 한국어 수정, V5 테스트 자가진단)과 설계 지향적 선택(V3 리팩터링, V7 DIP)이 가장 두드러집니다. V9에서 FakeOpenMeteoServer 접근법이 세 AI 모두로부터 극찬을 받아 이 실험의 기술적 하이라이트가 됐습니다.</div>
+          <div class="ai-arc" style="border-top:1px dashed var(--border);margin-top:8px;padding-top:8px;font-style:italic"><strong style="color:var(--ink);font-style:normal">실사용 느낌:</strong> 무난하고 안정적. Claude보다 지시 정확도는 낮지만, 토큰 여유가 많아 긴 작업을 중단 없이 이어갈 수 있음.</div>
+        </div>
+      </div>
+      <div class="ai-card">
+        <div class="ai-card-head">
+          <div class="ai-dot gm"></div>
+          <span class="ai-name">Gemini</span>
+          <span class="ai-model">gemini-3-flash</span>
+        </div>
+        <div class="ai-card-body">
+          <p class="ai-summary">V1~V6 전 단계 최단(V1~V6 평균 217초)입니다. V7·V8은 Codex가 역전했고, V9 코드 리뷰에서는 약 2,400초로 가장 오래 걸렸습니다. V3 인사이트 카드, V4 Retrofit 선택 등 사용자가 바로 체감할 수 있는 기능을 가장 적극적으로 추가했습니다. 단 후반부에서 V6 빌드 검증 실패, V7에서 기존 테스트 직접 수정(원칙 위반), V8에서 runBlocking 안티패턴으로 인한 실기기 크래시가 연속으로 발생했습니다.</p>
+          <div class="ai-tags">
+            <span class="ai-tag good">전 단계 최단</span>
+            <span class="ai-tag good">V3 스마트 기능</span>
+            <span class="ai-tag bad">V7 원칙 위반</span>
+            <span class="ai-tag bad">V8 안티패턴</span>
+          </div>
+          <div class="ai-arc"><strong style="color:var(--ink)">V1–V9 아크:</strong> 초반 속도와 창의성이 후반 품질 일관성으로 이어지지 못했습니다. V6, V7, V8에서 연속으로 품질 이슈가 발생한 것은 우연이 아닌 패턴으로 보입니다. V9에서 자기 코드를 스스로 비판적으로 분석해 개선점 4개를 도출했습니다.</div>
+          <div class="ai-arc" style="border-top:1px dashed var(--border);margin-top:8px;padding-top:8px;font-style:italic"><strong style="color:var(--ink);font-style:normal">실사용 느낌:</strong> 응답이 가장 빠르지만 간헐적으로 무한 로딩, rate limit, 환경 오류가 발생함. 이번 실험에서도 그 패턴이 반복됐음.</div>
+        </div>
+      </div>
+      <div class="ai-card">
+        <div class="ai-card-head">
+          <div class="ai-dot" style="background:#111827;"></div>
+          <span class="ai-name">Cursor</span>
+          <span class="ai-model">auto (Cursor Agent)</span>
+        </div>
+        <div class="ai-card-body">
+          <p class="ai-summary">VS Code IDE 안에서 동작하는 에이전트 방식으로 V1~V3를 진행했습니다. V3에서 쾌적 지수(온도·습도·체감온도를 종합해 '지금 나가기 좋은지' 알려주는 기능)를 추가해 전 단계 코드량 최다(11파일·986줄)를 달성했습니다. V4부터 무료 플랜 한도 도달로 비교에서 이탈했습니다.</p>
+          <div class="ai-tags">
+            <span class="ai-tag good">APK(안드로이드 앱 설치 파일) 자동 빌드</span>
+            <span class="ai-tag good">V3 스마트 기능</span>
+            <span class="ai-tag warn">V4부터 한도 초과</span>
+          </div>
+          <div class="ai-arc"><strong style="color:var(--ink)">V1–V3 아크:</strong> IDE에 직접 통합된 에이전트 방식의 강점(풍부한 컨텍스트, 자동 빌드)이 두드러졌습니다. 그러나 무료 플랜 한도가 장기 실험의 걸림돌이 됐습니다.</div>
+          <div class="ai-arc" style="border-top:1px dashed var(--border);margin-top:8px;padding-top:8px;font-style:italic"><strong style="color:var(--ink);font-style:normal">실사용 느낌:</strong> IDE 안에서 코드가 바로 적용되는 방식이 직관적. 단, 무료 플랜은 장기 프로젝트에서 금방 소진됨.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 누적 결론 -->
+  <section class="section reveal">
+    <div class="sec-head">
+      <span class="sec-n">07</span>
+      <h2 class="sec-t">V1 → V9 누적 결론</h2>
+      <span class="sec-sub">9단계를 모두 마친 후 내릴 수 있는 결론</span>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+      <div class="vbox" style="border-left:3px solid var(--gemini);">
+        <div class="vbox-rank" style="color:var(--gemini);">속도 · 1위</div>
+        <div class="vbox-name">Gemini</div>
+        <div class="vbox-desc">V1~V6 전 단계 최단(평균 217초). 특히 V2에서 149초로 Claude(360초) 대비 2.4배 빠름. V7부터 Codex에 역전. 단 후반부 품질 일관성이 아쉬우므로, 프로토타입이나 빠른 시제품 제작에 적합합니다.</div>
+      </div>
+      <div class="vbox" style="border-left:3px solid var(--codex);">
+        <div class="vbox-rank" style="color:var(--codex);">코드 품질 + 토큰 효율 · 1위</div>
+        <div class="vbox-name">Codex</div>
+        <div class="vbox-desc">V4에서 Claude(5,262,416 토큰) 대비 57배 적은 92,991 토큰 사용. V7 DIP(의존성 역전 원칙) Repository 인터페이스, V8 알림 권한 이중 방어. 장기 프로젝트에서 운용 비용과 코드 품질 모두 우수합니다.</div>
+      </div>
+      <div class="vbox" style="border-left:3px solid var(--claude);">
+        <div class="vbox-rank" style="color:var(--claude);">일관성 · 1위</div>
+        <div class="vbox-name">Claude</div>
+        <div class="vbox-desc">V4 Repository 설계가 V5~V9에 연쇄 긍정 영향. 지시 이행률 최고. V8에서도 runBlocking 없는 정석 코루틴 구현. V9 상호 리뷰에서 다른 AI들에게 가장 많은 것을 가르쳤습니다. 여러 사람이 함께 유지보수해야 하는 팀 협업 코드베이스에 적합합니다.</div>
+      </div>
+    </div>
+
+    <!-- 상황별 도구 선택 -->
+    <div style="margin-bottom:20px">
+      <p style="font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:12px">상황별 도구 선택</p>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
+        <div style="background:var(--faint);border-radius:6px;padding:14px 18px;border-left:3px solid var(--gemini)">
+          <div style="font-size:11px;font-weight:700;color:var(--gemini);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">빠른 프로토타입</div>
+          <div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:4px">Gemini</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.7">V1~V6 전 단계 최단. 일단 빠르게 만들어보고 싶을 때.</div>
+        </div>
+        <div style="background:var(--faint);border-radius:6px;padding:14px 18px;border-left:3px solid var(--codex)">
+          <div style="font-size:11px;font-weight:700;color:var(--codex);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">긴 작업 · 비용 절감</div>
+          <div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:4px">Codex</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.7">토큰 효율 최고. 한도 걱정 없이 이어서 작업 가능.</div>
+        </div>
+        <div style="background:var(--faint);border-radius:6px;padding:14px 18px;border-left:3px solid var(--claude)">
+          <div style="font-size:11px;font-weight:700;color:var(--claude);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">복잡한 요구사항 · 정확도</div>
+          <div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:4px">Claude Code</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.7">지시를 가장 잘 이해함. 단, 작업이 길어지면 토큰 한도 주의.</div>
+        </div>
+        <div style="background:var(--faint);border-radius:6px;padding:14px 18px;border-left:3px solid #111827">
+          <div style="font-size:11px;font-weight:700;color:#111827;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">IDE 통합 방식 선호</div>
+          <div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:4px">Cursor</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.7">IDE 안에서 바로 적용되는 방식. 무료 플랜은 장기 프로젝트에 부족할 수 있음.</div>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-top:8px;font-style:italic">* 실사용 경험 기반 (이 실험 포함 일반 사용 경험 종합)</p>
+    </div>
+
+    <div class="learn-grid">
+      <div class="learn-item">
+        <div class="learn-n">배운 것 1</div>
+        <p class="learn-body"><strong>AI에게 초기 설계를 맡길 때는 테스트 가능성까지 고려해야 합니다.</strong> Claude의 V4 Repository 분리 하나로 V5 테스트가 140줄로 끝났지만, Codex의 ViewModel 통합 구조는 245줄이 필요했습니다. AI가 내리는 아키텍처 결정의 파급효과는 즉시 드러나지 않고 이후 단계에서 누적됩니다.</p>
+      </div>
+      <div class="learn-item">
+        <div class="learn-n">배운 것 2</div>
+        <p class="learn-body"><strong>AI가 만든 코드는 빌드 성공 후 반드시 실기기에서 확인해야 합니다.</strong> Gemini V8은 <code>assembleDebug</code>(안드로이드 앱 빌드 명령어) 빌드가 성공했지만 실기기에서 즉시 크래시가 발생했습니다. <code>runBlocking</code> 안티패턴(백그라운드 작업 스레드를 강제로 차단하는 잘못된 코드 패턴)과 플러그인 누락은 컴파일러가 잡지 못하는 유형의 오류입니다.</p>
+      </div>
+      <div class="learn-item">
+        <div class="learn-n">배운 것 3</div>
+        <p class="learn-body"><strong>각 AI의 강점과 약점은 첫 버전에서 이미 드러납니다.</strong> Gemini는 V1 최단 → V8 최단으로 속도 패턴이 일관됐고, Codex는 V1 자동 빌드 → V8 이중 권한 방어로 품질 지향성이 유지됐으며, Claude는 V1 레이어 분리 → V8 정석 패턴으로 설계 일관성이 이어졌습니다. AI를 처음 써볼 때 단순한 과제 하나로도 특성 파악이 가능합니다.</p>
+      </div>
+      <div class="learn-item">
+        <div class="learn-n">배운 것 4</div>
+        <p class="learn-body"><strong>AI 능력을 제대로 평가하려면 단계별 누적 과제가 필요합니다.</strong> V1 한 번만으로는 Codex 한국어 깨짐이 일회성 실수인지 구조적 약점인지 알 수 없습니다. Codex V5 자가수정, Gemini V8 실기기 크래시 자가진단, V9 순환 학습 고리 같은 패턴은 단일 과제에서는 절대 관찰할 수 없습니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 빠른 네비게이션 -->
+  <nav style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">
+    <a href="report.html" style="text-decoration:none;font-size:12px;font-weight:600;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:4px 10px;transition:color .1s,border-color .1s;">V1 초기 생성</a>
+    <a href="report_v2.html" style="text-decoration:none;font-size:12px;font-weight:600;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:4px 10px;">V2 기능 추가</a>
+    <a href="report_v3.html" style="text-decoration:none;font-size:12px;font-weight:600;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:4px 10px;">V3 자율 혁신</a>
+    <a href="report_v4.html" style="text-decoration:none;font-size:12px;font-weight:600;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:4px 10px;">V4 실제 API</a>
+    <a href="report_v5.html" style="text-decoration:none;font-size:12px;font-weight:600;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:4px 10px;">V5 단위 테스트</a>
+    <a href="report_v6.html" style="text-decoration:none;font-size:12px;font-weight:600;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:4px 10px;">V6 버그 디버깅</a>
+    <a href="report_v7.html" style="text-decoration:none;font-size:12px;font-weight:600;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:4px 10px;">V7 Room DB</a>
+    <a href="report_v8.html" style="text-decoration:none;font-size:12px;font-weight:600;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:4px 10px;">V8 백그라운드 알림</a>
+    <a href="report_v9.html" style="text-decoration:none;font-size:12px;font-weight:600;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:4px 10px;">V9 상호 리뷰</a>
+    <a href="report_human.html" style="text-decoration:none;font-size:12px;font-weight:600;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:4px 10px;">직접 구현 vs AI</a>
+    <a href="report_tips.html" style="text-decoration:none;font-size:12px;font-weight:600;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:4px 10px;">더 잘 쓰는 방법</a>
+    <a href="code-rules.html" style="text-decoration:none;font-size:12px;font-weight:600;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:4px 10px;">코드 규칙 분석</a>
+  </nav>
+
+  <!-- 실전 적용 가이드 프로모 -->
+  <div class="guide-promo">
+    <div>
+      <div class="gp-label">다음 단계</div>
+      <div class="gp-title">AI를 더 잘 쓰는 방법 — CLAUDE.md · 테스트 먼저 패턴 · 팀 적용 로드맵</div>
+      <div class="gp-desc">이 실험은 설정 없는 순수 기량 비교였습니다. CLAUDE.md로 AI 실수를 규칙으로 막고, "테스트 먼저" 패턴으로 검증 가능한 목표를 주고, Hooks로 자동화하면 — AI의 약점은 규칙으로 막히고, 반복 검증은 자동화됩니다.</div>
+    </div>
+    <a class="gp-btn" href="report_tips.html">가이드 보기</a>
+  </div>
+
+</div>
+
+<footer class="footer">
+  WeatherNow AI 비교 실험 · Claude Code / OpenAI Codex / Gemini CLI / Cursor Agent
+</footer>
+
+<script>
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
+  });
+}, { threshold: 0.08 });
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+const scoreIo = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.querySelectorAll('.score-fill').forEach(b => {
+        const w = b.style.width; b.style.width = '0';
+        requestAnimationFrame(() => setTimeout(() => { b.style.width = w; }, 80));
+      });
+      scoreIo.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.3 });
+document.querySelectorAll('.scores').forEach(el => scoreIo.observe(el));
+</script>
+</body>
+</html>

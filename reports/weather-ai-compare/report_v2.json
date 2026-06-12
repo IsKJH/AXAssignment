@@ -1,0 +1,210 @@
+{
+  "generatedAt": "2026-05-28T15:30:12",
+  "project": "WeatherNow Android App - AI v2 improvement comparison",
+  "baselineTag": "weather-v1",
+  "resultTag": "weather-v2",
+  "prompt": "동일한 기존 앱 개선 프롬프트를 3개 AI CLI에 제공하고 결과 비교",
+  "criteria": [
+    "기존 프로젝트를 새로 만들지 않고 개선",
+    "한국어 깨짐 수정",
+    "시간별 예보 추가",
+    "강수확률/자외선/대기질 추가",
+    "새로고침/마지막 업데이트/loading 상태 추가",
+    "즐겨찾기 상태 추가",
+    "빌드 및 실제 기기 스크린샷 성공",
+    "토큰 사용량과 소요 시간 비교"
+  ],
+  "results": {
+    "claude": {
+      "model": "claude-sonnet-4-6 (Claude Code CLI v2.1.153)",
+      "elapsedSec": 360.6,
+      "tokens": {
+        "captured": true,
+        "freshInput": 24,
+        "cacheCreation": 39214,
+        "cacheRead": 979789,
+        "output": 24965,
+        "totalInput": 1019027,
+        "grandTotal": 1043992,
+        "auxModelTotal": 1303,
+        "costUSD": 0.8169152000000002,
+        "note": "Claude CLI 사용량 기준. 캐시 생성/재사용 토큰을 분리했고, 보조 모델 사용량은 별도 항목으로 표시했습니다."
+      },
+      "code": {
+        "ktFiles": 5,
+        "ktLines": 580,
+        "changedFileCountFromV1": 3,
+        "changedFilesFromV1": [
+          "M\tprojects/weather-claude/app/src/main/java/com/example/weathernow/data/WeatherData.kt",
+          "M\tprojects/weather-claude/app/src/main/java/com/example/weathernow/ui/WeatherScreen.kt",
+          "M\tprojects/weather-claude/app/src/main/java/com/example/weathernow/viewmodel/WeatherViewModel.kt"
+        ],
+        "diffStatFromV1": ".../com/example/weathernow/data/WeatherData.kt     |  48 +++-\n .../com/example/weathernow/ui/WeatherScreen.kt     | 263 +++++++++++++++------\n .../weathernow/viewmodel/WeatherViewModel.kt       |  40 +++-\n 3 files changed, 268 insertions(+), 83 deletions(-)"
+      },
+      "build": {
+        "success": true,
+        "screenshotSuccess": true,
+        "screenshot": "screenshots/v2/claude.png",
+        "note": "assembleDebug, APK install, ADB screenshot 검증 완료"
+      },
+      "requirements": {
+        "koreanFixed": true,
+        "hourlyForecast": true,
+        "extraDetails": true,
+        "refresh": true,
+        "favorite": true,
+        "fiveDayForecastPreserved": true,
+        "completedCount": 6,
+        "totalCount": 6
+      },
+      "ui": {
+        "theme": "밝은 블루 그라디언트, v1 감성 유지",
+        "citySelector": "상단 pill 탭 + 즐겨찾기 표시",
+        "icons": "이모지",
+        "features": [
+          "시간별 예보",
+          "상세 날씨 카드",
+          "새로고침/마지막 업데이트",
+          "즐겨찾기"
+        ],
+        "korean": "정상",
+        "note": "v1의 시각 정체성을 가장 많이 유지. 하단 시간별 예보가 내비게이션 바와 일부 겹침"
+      }
+    },
+    "codex": {
+      "model": "gpt-5.5 (OpenAI Codex CLI v0.134.0)",
+      "elapsedSec": 315,
+      "tokens": {
+        "captured": true,
+        "input": 1604558,
+        "cachedInput": 1406720,
+        "output": 11382,
+        "reasoningOutput": 1063,
+        "grandTotal": 1615940,
+        "note": "Codex CLI 사용량 기준. 입력 토큰에는 캐시 입력 토큰이 포함되어 있어 별도 항목으로 함께 표시했습니다."
+      },
+      "code": {
+        "ktFiles": 6,
+        "ktLines": 736,
+        "changedFileCountFromV1": 6,
+        "changedFilesFromV1": [
+          "M\tprojects/weather-codex/app/src/main/java/com/example/weathernow/MainActivity.kt",
+          "M\tprojects/weather-codex/app/src/main/java/com/example/weathernow/WeatherData.kt",
+          "M\tprojects/weather-codex/app/src/main/java/com/example/weathernow/WeatherViewModel.kt",
+          "M\tprojects/weather-codex/app/src/main/java/com/example/weathernow/ui/WeatherScreen.kt",
+          "M\tprojects/weather-codex/app/src/main/java/com/example/weathernow/ui/components/ForecastRow.kt",
+          "M\tprojects/weather-codex/app/src/main/java/com/example/weathernow/ui/components/MetricTile.kt"
+        ],
+        "diffStatFromV1": ".../java/com/example/weathernow/MainActivity.kt    |   4 +-\n .../java/com/example/weathernow/WeatherData.kt     |  91 ++++--\n .../com/example/weathernow/WeatherViewModel.kt     |  58 +++-\n .../com/example/weathernow/ui/WeatherScreen.kt     | 328 ++++++++++++++++-----\n .../weathernow/ui/components/ForecastRow.kt        |  10 +-\n .../example/weathernow/ui/components/MetricTile.kt |   6 +-\n 6 files changed, 391 insertions(+), 106 deletions(-)"
+      },
+      "build": {
+        "success": true,
+        "screenshotSuccess": true,
+        "screenshot": "screenshots/v2/codex.png",
+        "note": "assembleDebug, APK install, ADB screenshot 검증 완료"
+      },
+      "requirements": {
+        "koreanFixed": true,
+        "hourlyForecast": true,
+        "extraDetails": true,
+        "refresh": true,
+        "favorite": true,
+        "fiveDayForecastPreserved": true,
+        "completedCount": 6,
+        "totalCount": 6
+      },
+      "ui": {
+        "theme": "다크 네이비 대시보드",
+        "citySelector": "상단 버튼형 도시 선택",
+        "icons": "이모지 + 텍스트",
+        "features": [
+          "시간별 예보",
+          "상세 날씨",
+          "새로고침",
+          "즐겨찾기"
+        ],
+        "korean": "정상",
+        "note": "정보 구조와 컴포넌트 분리가 가장 명확. v1 대비 디자인 변화 폭은 큼"
+      }
+    },
+    "gemini": {
+      "model": "gemini-3.1-flash-lite + gemini-3-flash (Gemini CLI v0.43.0)",
+      "elapsedSec": 149.4,
+      "tokens": {
+        "captured": true,
+        "models": {
+          "gemini-3.1-flash-lite": {
+            "input": 4233,
+            "output": 72,
+            "cached": 0,
+            "thoughts": 114,
+            "tool": 0,
+            "total": 4419
+          },
+          "gemini-3-flash-preview": {
+            "input": 113147,
+            "output": 11267,
+            "cached": 510124,
+            "thoughts": 3684,
+            "tool": 0,
+            "total": 638222
+          }
+        },
+        "grandTotal": 642641,
+        "note": "Gemini CLI 통계 기준. 보조 모델과 본 작업 모델 사용량을 합산했습니다."
+      },
+      "code": {
+        "ktFiles": 5,
+        "ktLines": 518,
+        "changedFileCountFromV1": 4,
+        "changedFilesFromV1": [
+          "M\tprojects/weather-gemini/app/src/main/java/com/example/weathernow/WeatherData.kt",
+          "M\tprojects/weather-gemini/app/src/main/java/com/example/weathernow/WeatherViewModel.kt",
+          "M\tprojects/weather-gemini/app/src/main/java/com/example/weathernow/ui/WeatherScreen.kt",
+          "M\tprojects/weather-gemini/app/src/main/java/com/example/weathernow/ui/components/WeatherComponents.kt"
+        ],
+        "diffStatFromV1": ".../java/com/example/weathernow/WeatherData.kt     |  45 ++++-\n .../com/example/weathernow/WeatherViewModel.kt     |  49 +++++-\n .../com/example/weathernow/ui/WeatherScreen.kt     | 185 ++++++++++++++-------\n .../weathernow/ui/components/WeatherComponents.kt  |  93 ++++++++---\n 4 files changed, 293 insertions(+), 79 deletions(-)"
+      },
+      "build": {
+        "success": true,
+        "screenshotSuccess": true,
+        "screenshot": "screenshots/v2/gemini.png",
+        "note": "assembleDebug, APK install, ADB screenshot 검증 완료"
+      },
+      "requirements": {
+        "koreanFixed": true,
+        "hourlyForecast": true,
+        "extraDetails": true,
+        "refresh": true,
+        "favorite": true,
+        "fiveDayForecastPreserved": true,
+        "completedCount": 6,
+        "totalCount": 6
+      },
+      "ui": {
+        "theme": "블루 그라디언트, 모바일 앱 액션 중심",
+        "citySelector": "상단 텍스트 탭",
+        "icons": "이모지",
+        "features": [
+          "시간별 예보",
+          "상세 날씨 카드",
+          "새로고침 아이콘",
+          "즐겨찾기 하트"
+        ],
+        "korean": "정상",
+        "note": "상단 액션 배치가 직관적. 하단 시간별 예보가 내비게이션 바와 일부 겹침"
+      }
+    }
+  },
+  "comparison": {
+    "fastestGeneration": "Gemini (149.4초)",
+    "lowestTokenUse": "Gemini (642,641)",
+    "highestTokenUse": "Codex (1,615,940)",
+    "mostChangedFiles": "Codex (6개 파일)",
+    "leastChangedFiles": "Claude (3개 파일)",
+    "mostCodeAfterV2": "Codex (736줄)",
+    "leastCodeAfterV2": "Gemini (518줄)",
+    "buildSuccess": "all",
+    "screenshotSuccess": "all"
+  }
+}

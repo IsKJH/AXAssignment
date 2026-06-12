@@ -1,0 +1,141 @@
+{
+  "generatedAt": "2026-05-28",
+  "project": "WeatherNow Android App - AI 비교 실험",
+  "prompt": "동일한 Android 날씨 앱 명세서를 AI에 제공, 결과 비교 (CLI 3종 + Cursor)",
+
+  "results": {
+    "claude": {
+      "model": "claude-sonnet-4-6 (Claude Code CLI v2.1.152)",
+      "elapsedSec": 537,
+      "tokens": {
+        "freshInput": 40,
+        "cacheCreation": 12305,
+        "cacheRead": 865307,
+        "output": 40626,
+        "totalInput": 877652,
+        "grandTotal": 918278,
+        "note": "Claude는 프롬프트 캐싱을 사용. cacheRead 토큰은 일반 입력 대비 약 10배 저렴하게 과금됨"
+      },
+      "code": {
+        "ktFiles": 5,
+        "ktLines": 395,
+        "totalFiles": 19
+      },
+      "build": {
+        "success": true,
+        "apkAutoBuilt": false,
+        "note": "gradlew 파일 미생성 (수동 보완 필요)"
+      },
+      "ui": {
+        "theme": "라이트 — 하늘색 그라데이션",
+        "citySelector": "탭 (Pill 형태)",
+        "icons": "이모지",
+        "features": ["동적 배경 (날씨별 색상 변경)", "카드 3개 (체감/습도/풍속)", "5일 예보 리스트"],
+        "korean": "정상"
+      }
+    },
+    "codex": {
+      "model": "gpt-5.5 (OpenAI Codex CLI v0.134.0)",
+      "elapsedSec": null,
+      "tokens": {
+        "total": 165761,
+        "inputOutputSplit": "미제공 (CLI가 합계만 출력)",
+        "note": "Codex CLI는 입력/출력 분리 없이 총 사용 토큰만 표시"
+      },
+      "code": {
+        "ktFiles": 6,
+        "ktLines": 451,
+        "totalFiles": "다수 (빌드 파일 포함)"
+      },
+      "build": {
+        "success": true,
+        "apkAutoBuilt": true,
+        "note": "생성 완료 후 자동으로 gradlew assembleDebug 실행하여 APK 생성"
+      },
+      "ui": {
+        "theme": "다크 — 네이비 계열",
+        "citySelector": "탭 버튼",
+        "icons": "이모지 (??로 표시 — 한국어 인코딩 깨짐)",
+        "features": ["WeatherNow 헤더 표시", "Feels like 표시", "5일 예보"],
+        "korean": "깨짐 (stdin 파이프 시 한국어 인코딩 손실)"
+      }
+    },
+    "gemini": {
+      "model": "gemini-3-flash-preview + gemini-3.1-flash-lite (Gemini CLI v0.43.0)",
+      "elapsedSec": 318,
+      "tokens": {
+        "mainModel": {
+          "input": 106847,
+          "output": 3521,
+          "cached": 555670,
+          "thoughts": 4122,
+          "total": 670160
+        },
+        "routerModel": {
+          "input": 2208,
+          "output": 54,
+          "total": 2362
+        },
+        "grandTotal": 672522,
+        "note": "기존 프로젝트에서 재측정. 출력 토큰(3,521)은 실제 초기 생성 시보다 적을 수 있음. 2개 모델 동시 사용 (라우터 + 메인)"
+      },
+      "code": {
+        "ktFiles": 5,
+        "ktLines": 304,
+        "totalFiles": "다수"
+      },
+      "build": {
+        "success": true,
+        "apkAutoBuilt": false,
+        "note": "빌드 확인은 했으나 mipmap 리소스 누락으로 수동 보완 필요"
+      },
+      "ui": {
+        "theme": "라이트 — 인디고/보라 그라데이션",
+        "citySelector": "탭 (상단)",
+        "icons": "이모지",
+        "features": ["심플한 레이아웃", "카드형 상세 정보", "5일 예보"],
+        "korean": "정상"
+      }
+    },
+    "cursor": {
+      "model": "auto (Cursor Agent)",
+      "elapsedSec": 360,
+      "tokens": {
+        "grandTotal": 1170000,
+        "costUSD": 0.48,
+        "billingStatus": "Included",
+        "billingType": "free",
+        "note": "Cursor Usage 기준 총 토큰(15.3만+9.6만+92.1만). 입·출력 분리 미제공. US$0.48은 Included(무료 한도 포함, 추가 청구 아님)."
+      },
+      "code": {
+        "ktFiles": 7,
+        "ktLines": 473,
+        "totalFiles": 7
+      },
+      "build": {
+        "success": true,
+        "apkAutoBuilt": true,
+        "screenshotSuccess": true,
+        "note": "Cursor IDE Agent 대화형 세션. Gradle assembleDebug 및 ADB 스크린샷 검증 완료."
+      },
+      "ui": {
+        "theme": "라이트 — 청록(teal) 그라데이션",
+        "citySelector": "세그먼트 탭 (상단)",
+        "icons": "이모지",
+        "features": ["체감/습도/풍속 3칩", "5일 예보 가로 카드"],
+        "korean": "정상"
+      }
+    }
+  },
+
+  "comparison": {
+    "fastestGeneration": "gemini (318초)",
+    "mostCode": "codex (451줄, 6개 파일)",
+    "leastCode": "gemini (304줄, 5개 파일)",
+    "mostAutomated": "codex (APK 자동 빌드)",
+    "bestKoreanSupport": "claude, gemini",
+    "lowestRawTokenCount": "codex (165,761)",
+    "cachingAdvantage": "claude (캐시 읽기로 실질 비용 절감)",
+    "cursorNote": "Cursor v1: Usage 117만 토큰·$0.48 표시이나 Included(무료 포함). IDE 대화형 세션."
+  }
+}

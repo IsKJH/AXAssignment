@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>WeatherNow V7 Room DB 영속성 비교</title>
+<link rel="stylesheet" href="report_common.css?v=20260601">
+</head>
+<body id="top">
+<div class="wrap">
+
+  <header class="rh">
+    <h1 class="rh-title">V7 — Room Database 영속성</h1>
+    <p class="rh-sub">즐겨찾기 도시를 앱 재시작 후에도 기억하도록 Room DB(안드로이드 공식 SQLite 래퍼 라이브러리)를 추가했습니다. DB를 추가하면 기존 단위 테스트가 "DAO(Data Access Object — DB 쿼리를 담당하는 인터페이스)를 모르기 때문에" 깨지는 문제가 생기는데, 이 <strong>테스트 호환성</strong> 문제를 세 AI가 완전히 다른 방식으로 해결했습니다: Claude(DAO nullable) / Codex(Repository 인터페이스·DIP) / Gemini(기존 테스트 직접 수정).</p>
+    <div class="rh-meta">
+      <span class="ai-pill"><span class="dot claude"></span>Claude</span>
+      <span class="ai-pill"><span class="dot codex"></span>Codex</span>
+      <span class="ai-pill"><span class="dot gemini"></span>Gemini</span>
+      <span class="tag-sm">V6 완료 코드 기반</span>
+      <span class="tag-sm">2026-06-02</span>
+    </div>
+    <div class="rh-tldr">
+      <div><div class="rh-tldr-label">이 단계에서 한 것</div><div class="rh-tldr-val">즐겨찾기 도시를 앱 재시작 후에도 기억하도록 Room DB 추가</div></div>
+      <div><div class="rh-tldr-label">핵심 차이점</div><div class="rh-tldr-val">기존 테스트 호환 전략 3가지 갈림: Claude DAO nullable / <strong>Codex Repository 인터페이스(DIP — 추상 인터페이스에 의존해 구현체를 교체 가능하게 하는 설계 원칙)</strong> / Gemini 기존 테스트 수정(원칙 위반)</div></div>
+      <div><div class="rh-tldr-label">결론</div><div class="rh-tldr-val">전원 빌드 성공 &middot; <strong>Codex 419초 최단</strong> &middot; Gemini만 기존 테스트 원칙 위반</div></div>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <a href="index.html">← 전체 요약</a>
+    <a href="#overview">개요</a>
+    <a href="#result">결과 비교</a>
+    <a href="#design">설계 전략</a>
+    <a href="#tokens">토큰 · 시간</a>
+    <a href="#verdict">최종 평가</a>
+  </nav>
+
+  <!-- 핵심 수치 -->
+  <section class="card" id="overview">
+    <div class="sh"><span class="sh-num">01</span><h2>실험 개요</h2></div>
+    <div class="metric-grid">
+      <div class="metric">
+        <div class="metric-k">빌드 성공</div>
+        <div class="metric-v">전원 3/3</div>
+      </div>
+      <div class="metric">
+        <div class="metric-k">가장 빠름</div>
+        <div class="metric-v">Codex 419초</div>
+      </div>
+      <div class="metric">
+        <div class="metric-k">최저 토큰</div>
+        <div class="metric-v">Codex 104,195</div>
+      </div>
+      <div class="metric">
+        <div class="metric-k">테스트 무수정</div>
+        <div class="metric-v">Claude · Codex</div>
+      </div>
+    </div>
+    <div class="callout-grid" style="margin-top:16px">
+      <div class="callout">
+        <div class="callout-k">실험 설계</div>
+        <div class="callout-v">V6 버그 수정 완료 코드 위에서 Room DB를 추가했습니다. 스키마 설계와 기존 테스트 호환 방법은 각 AI의 자율 선택입니다.</div>
+      </div>
+      <div class="callout">
+        <div class="callout-k">핵심 관찰 포인트</div>
+        <div class="callout-v">세 AI 모두 "단일행 테이블" 스키마를 선택했습니다. 차이는 기존 V5 단위 테스트를 어떻게 깨지 않게 유지했느냐 — 접근이 세 가지 모두 달랐습니다.</div>
+      </div>
+      <div class="callout">
+        <div class="callout-k">V5 연속성 — 왜 테스트 호환성이 핵심인가</div>
+        <div class="callout-v">V5에서 각 AI가 작성한 단위 테스트는 ViewModel을 생성자 인자 없이 인스턴스화합니다. V7에서 DAO를 ViewModel 생성자에 추가하면, 그 테스트들은 "DAO를 넘기지 않았다"는 이유로 컴파일 단계부터 실패합니다. 이것이 <strong>테스트 호환성 문제</strong>입니다. 새 기능을 추가하면서도 V5 테스트를 무수정으로 통과시키는 것이 이번 단계의 핵심 기술 과제였습니다.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 결과 비교 -->
+  <section class="card" id="result">
+    <div class="sh"><span class="sh-num">02</span><h2>결과 비교</h2></div>
+    <div class="ai-grid">
+      <div class="ai-card">
+        <div class="ai-card-head claude">
+          <span class="dot claude"></span> Claude
+          <span class="ai-card-model">claude-sonnet-4-6</span>
+        </div>
+        <div class="ai-card-body">
+          <div class="ai-stat hl"><span class="ai-stat-k">빌드</span><span class="ai-stat-v"><span class="badge ok">성공</span></span></div>
+          <div class="ai-stat"><span class="ai-stat-k">소요 시간</span><span class="ai-stat-v">519초</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">단위 테스트</span><span class="ai-stat-v"><span class="badge ok">무수정 통과</span></span></div>
+          <div class="ai-stat"><span class="ai-stat-k">스키마</span><span class="ai-stat-v">단일행 (id=1 고정)</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">테스트 호환 전략</span><span class="ai-stat-v">DAO nullable 파라미터</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">신규 파일</span><span class="ai-stat-v">3개 (@Entity(Room DB 테이블 구조를 정의하는 클래스)·DAO·DB) + Factory</span></div>
+        </div>
+      </div>
+      <div class="ai-card">
+        <div class="ai-card-head codex">
+          <span class="dot codex"></span> Codex
+          <span class="ai-card-model">gpt-5.5</span>
+        </div>
+        <div class="ai-card-body">
+          <div class="ai-stat hl"><span class="ai-stat-k">빌드</span><span class="ai-stat-v"><span class="badge ok">성공</span></span></div>
+          <div class="ai-stat"><span class="ai-stat-k">소요 시간</span><span class="ai-stat-v">419초 ⚡</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">단위 테스트</span><span class="ai-stat-v"><span class="badge ok">무수정 통과</span></span></div>
+          <div class="ai-stat"><span class="ai-stat-k">스키마</span><span class="ai-stat-v">단일행 (nullable cityIndex)</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">테스트 호환 전략</span><span class="ai-stat-v">Repository 인터페이스 + NoOp 구현체</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">신규 파일</span><span class="ai-stat-v">5개 (Entity·DAO·DB·Repository인터페이스·NoOp구현체)</span></div>
+        </div>
+      </div>
+      <div class="ai-card">
+        <div class="ai-card-head gemini">
+          <span class="dot gemini"></span> Gemini
+          <span class="ai-card-model">gemini-3-flash-preview</span>
+        </div>
+        <div class="ai-card-body">
+          <div class="ai-stat hl"><span class="ai-stat-k">빌드</span><span class="ai-stat-v"><span class="badge ok">성공</span></span></div>
+          <div class="ai-stat"><span class="ai-stat-k">소요 시간</span><span class="ai-stat-v">556초</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">단위 테스트</span><span class="ai-stat-v"><span class="badge warn">테스트 직접 수정</span></span></div>
+          <div class="ai-stat"><span class="ai-stat-k">스키마</span><span class="ai-stat-v">단일행 (id=1 고정)</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">테스트 호환 전략</span><span class="ai-stat-v">기존 테스트에 DAO mock 추가</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">도구 오류</span><span class="ai-stat-v">replace 4회 실패 후 복구</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 설계 전략 비교 -->
+  <section class="card" id="design">
+    <div class="sh"><span class="sh-num">03</span><h2>테스트 호환 설계 전략</h2></div>
+    <p class="lead"><strong>테스트 호환성(Test Compatibility)</strong>이란, 새 기능을 추가한 후에도 이전 단계에서 작성한 단위 테스트가 수정 없이 그대로 통과할 수 있는 상태를 말합니다. Room DAO를 ViewModel 생성자에 추가하면, V5 단계에서 작성된 테스트는 DAO를 인자로 넘기지 않기 때문에 컴파일 자체가 실패합니다. 세 AI가 이 문제를 각각 다른 방식으로 해결했습니다.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>AI</th>
+            <th>전략</th>
+            <th>핵심 코드</th>
+            <th>장점</th>
+            <th>단점</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-label"><span class="dot claude"></span> Claude</td>
+            <td><strong>DAO nullable 파라미터</strong><br>DAO가 null이면 DB 작업 생략</td>
+            <td><code>class WeatherViewModel(private val dao: FavoriteCityDao? = null)</code></td>
+            <td>기존 테스트 코드를 한 줄도 건드리지 않아 테스트 호환성을 완벽히 유지합니다. 변경 범위가 최소화되어 도입 위험이 낮습니다.</td>
+            <td>DAO가 null일 수 있다는 사실이 프로덕션 코드에 <code>dao?.upsert()</code> 형태로 남습니다. 실제로는 프로덕션에서 null이 들어올 일이 없는데도 코드가 방어적으로 작성되어, 타입 시스템이 "DAO가 없는 상태"를 정상 경로로 오인할 수 있습니다.</td>
+          </tr>
+          <tr class="row-hl">
+            <td class="col-label"><span class="dot codex"></span> Codex</td>
+            <td><strong>Repository 인터페이스 + NoOp 구현체</strong><br>테스트에선 아무것도 안 하는 NoOp, 프로덕션에선 Room 구현체 주입</td>
+            <td><code>interface FavoriteCityRepository</code><br><code>object NoOpFavoriteCityRepository</code></td>
+            <td><strong>의존성 역전 원칙(DIP, Dependency Inversion Principle)</strong> — "상위 모듈(ViewModel)은 구체적인 구현(Room)에 의존하지 말고 추상(인터페이스)에 의존해야 한다"는 원칙 — 을 적용했습니다. ViewModel은 <code>FavoriteCityRepository</code> 인터페이스만 알고, 어떤 구현체가 주입되는지 관심이 없습니다. <strong>NoOpFavoriteCityRepository</strong>는 인터페이스를 구현하되 실제 저장은 아무것도 하지 않는 "빈 껍데기" 구현체로, 테스트에서 DB 없이 주입할 수 있습니다. Hilt·Koin 같은 DI 프레임워크를 도입하거나 구현체를 교체할 때 ViewModel 코드를 전혀 수정하지 않아도 됩니다.</td>
+            <td>파일 5개 추가로 코드량이 늘어납니다. 소규모 프로젝트에서는 과설계처럼 보일 수 있습니다.</td>
+          </tr>
+          <tr>
+            <td class="col-label"><span class="dot gemini"></span> Gemini</td>
+            <td><strong>기존 테스트 직접 수정</strong><br>DAO를 MockK로 mock해서 기존 테스트에 주입</td>
+            <td><code>val mockDao = mockk&lt;FavoriteCityDao&gt;()</code></td>
+            <td>프로덕션 코드가 가장 단순하고 명확합니다. DAO가 직접 주입되므로 의도가 코드에 바로 드러납니다.</td>
+            <td>이 실험의 V5 단계 원칙인 "기존 테스트는 수정하지 말 것"을 직접 위반합니다. 테스트를 수정 가능한 산출물로 취급하면, 이후 V8·V9 단계에서도 기능 추가 때마다 테스트가 변경되어 "테스트가 설계 변경으로부터 코드를 보호한다"는 역할을 잃게 됩니다. 또한 DAO 시그니처가 바뀔 때마다 테스트도 함께 수정해야 하는 결합도 문제가 생깁니다.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="insight">
+      <span class="insight-icon">🏆</span>
+      <div><strong>Codex의 Repository 인터페이스 접근이 가장 설계 지향적입니다.</strong> DIP(Dependency Inversion Principle — 추상 인터페이스에 의존해 구현체를 교체 가능하게 하는 설계 원칙)를 적용해 ViewModel이 구체 클래스(Room DAO) 대신 추상(인터페이스)에 의존하도록 했습니다. 덕분에 테스트에서는 가짜 NoOp 구현체를, 실제 앱에서는 진짜 Room DB 구현체를 교체해 끼울 수 있습니다. 나중에 DataStore나 다른 저장소로 교체해도 ViewModel 코드를 건드리지 않아도 됩니다. 약점은 파일 수 증가로 인한 초기 코드량이지만, 프로젝트 규모가 커질수록 이 투자는 상쇄됩니다.</div>
+    </div>
+    <div class="insight">
+      <span class="insight-icon">💡</span>
+      <div><strong>Claude의 nullable DAO는 방어적 타협입니다.</strong> 기존 테스트를 수정하지 않으면서 가장 적은 코드 변경으로 목표를 달성한 실용적 선택입니다. 강점은 변경 범위가 최소화되고 테스트 호환성이 완벽하다는 점입니다. 약점은 DAO가 null일 수 있다는 사실이 프로덕션 코드에 영구적으로 남아, 실제로는 발생하지 않는 null 경로를 코드가 계속 인지하고 있어야 한다는 점입니다.</div>
+    </div>
+    <div class="insight">
+      <span class="insight-icon">⚠️</span>
+      <div><strong>Gemini의 기존 테스트 수정은 왜 문제인가.</strong> 이 실험은 V5 단계부터 "기존 테스트는 수정하지 말 것"을 명시적 원칙으로 설정했습니다. 이 원칙이 존재하는 이유는 단위 테스트가 <em>코드 변경의 안전망</em>이기 때문입니다. 테스트를 수정하면 그 안전망 자체가 흔들리고, 테스트가 "기능이 올바른지 확인"하는 역할 대신 "새 기능에 맞춰 계속 따라가야 하는 대상"으로 성격이 바뀝니다. Gemini는 프로덕션 코드를 가장 단순하게 작성했지만, 지시 이행 정확도와 장기적 설계 원칙 준수 측면에서 다른 두 AI와 차이가 있습니다.</div>
+    </div>
+  </section>
+
+  <!-- 토큰 · 시간 -->
+  <section class="card" id="tokens">
+    <div class="sh"><span class="sh-num">04</span><h2>토큰 · 시간</h2></div>
+    <div class="ai-grid">
+      <div class="ai-card">
+        <div class="ai-card-head claude"><span class="dot claude"></span> Claude</div>
+        <div class="ai-card-body">
+          <div class="ai-stat hl"><span class="ai-stat-k">소요 시간</span><span class="ai-stat-v">519초</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">총 처리 토큰</span><span class="ai-stat-v">1,857,932</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">신규 입력</span><span class="ai-stat-v">52</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">캐시 생성</span><span class="ai-stat-v">77,454</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">캐시 재사용</span><span class="ai-stat-v">1,748,938 (94%)</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">출력</span><span class="ai-stat-v">31,488</span></div>
+        </div>
+      </div>
+      <div class="ai-card">
+        <div class="ai-card-head codex"><span class="dot codex"></span> Codex</div>
+        <div class="ai-card-body">
+          <div class="ai-stat hl"><span class="ai-stat-k">소요 시간</span><span class="ai-stat-v">419초 ⚡</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">총 사용 토큰</span><span class="ai-stat-v">104,195 🏆</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">V6 대비</span><span class="ai-stat-v">62,909 → 104,195</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">집계 방식</span><span class="ai-stat-v">신규 소비 기준</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">JAVA_HOME</span><span class="ai-stat-v">Android Studio JBR 자체 해결</span></div>
+        </div>
+      </div>
+      <div class="ai-card">
+        <div class="ai-card-head gemini"><span class="dot gemini"></span> Gemini</div>
+        <div class="ai-card-body">
+          <div class="ai-stat hl"><span class="ai-stat-k">소요 시간</span><span class="ai-stat-v">556초</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">총 처리 토큰</span><span class="ai-stat-v">4,607,039</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">입력 합산</span><span class="ai-stat-v">4,571,481</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">캐시</span><span class="ai-stat-v">4,116,864</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">사고(thoughts)</span><span class="ai-stat-v">11,816</span></div>
+          <div class="ai-stat"><span class="ai-stat-k">출력</span><span class="ai-stat-v">23,742</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 소요 시간 바 차트 -->
+    <div style="margin-top:18px">
+      <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:10px">소요 시간 비교 (초)</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:60px;font-size:12px;font-weight:700;color:var(--claude)">Claude</span>
+          <div class="bar-track" style="flex:1;height:10px;background:var(--border);border-radius:999px;overflow:hidden">
+            <div class="bar-fill claude" style="width:93%;height:100%"></div>
+          </div>
+          <span style="font-size:12px;font-family:monospace;color:var(--text2);width:50px;text-align:right">519s</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:60px;font-size:12px;font-weight:700;color:var(--codex)">Codex</span>
+          <div class="bar-track" style="flex:1;height:10px;background:var(--border);border-radius:999px;overflow:hidden">
+            <div class="bar-fill codex" style="width:75%;height:100%"></div>
+          </div>
+          <span style="font-size:12px;font-family:monospace;color:var(--text2);width:50px;text-align:right">419s</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:60px;font-size:12px;font-weight:700;color:var(--gemini)">Gemini</span>
+          <div class="bar-track" style="flex:1;height:10px;background:var(--border);border-radius:999px;overflow:hidden">
+            <div class="bar-fill gemini" style="width:100%;height:100%"></div>
+          </div>
+          <span style="font-size:12px;font-family:monospace;color:var(--text2);width:50px;text-align:right">556s</span>
+        </div>
+      </div>
+    </div>
+    <div class="note-box" style="margin-top:16px">각 AI의 토큰 집계 방식이 다릅니다. Claude는 캐시 포함 전체 처리량(캐시 재사용 94%), Codex는 신규 소비 기준, Gemini는 턴마다 컨텍스트가 반복 포함되는 전체 합산입니다. Gemini의 캐시 토큰(4,116,864)이 급격히 증가한 것은 V1~V6 누적 컨텍스트가 그대로 유지되기 때문입니다.</div>
+  </section>
+
+  <!-- 최종 평가 -->
+  <section class="card" id="verdict">
+    <div class="sh"><span class="sh-num">05</span><h2>최종 평가</h2></div>
+
+    <div class="score-grid">
+      <div class="score-hdr">평가 기준</div>
+      <div class="score-hdr claude">Claude</div>
+      <div class="score-hdr codex">Codex</div>
+      <div class="score-hdr gemini">Gemini</div>
+
+      <div class="score-row hl">
+        <div class="score-label">빌드 성공</div>
+        <div class="score-val">✅</div>
+        <div class="score-val">✅</div>
+        <div class="score-val">✅</div>
+      </div>
+      <div class="score-row">
+        <div class="score-label">기존 테스트 보존</div>
+        <div class="score-val">⭐⭐⭐</div>
+        <div class="score-val">⭐⭐⭐</div>
+        <div class="score-val">⭐</div>
+      </div>
+      <div class="score-row">
+        <div class="score-label">설계 품질</div>
+        <div class="score-val">⭐⭐</div>
+        <div class="score-val">⭐⭐⭐</div>
+        <div class="score-val">⭐⭐</div>
+      </div>
+      <div class="score-row">
+        <div class="score-label">속도</div>
+        <div class="score-val">⭐⭐</div>
+        <div class="score-val">⭐⭐⭐</div>
+        <div class="score-val">⭐</div>
+      </div>
+      <div class="score-row">
+        <div class="score-label">토큰 효율</div>
+        <div class="score-val">⭐⭐</div>
+        <div class="score-val">⭐⭐⭐</div>
+        <div class="score-val">⭐</div>
+      </div>
+      <div class="score-row hl">
+        <div class="score-label">지시 이행 정확도</div>
+        <div class="score-val">⭐⭐⭐</div>
+        <div class="score-val">⭐⭐⭐</div>
+        <div class="score-val">⭐⭐</div>
+      </div>
+    </div>
+
+    <div class="insight" style="margin-top:16px">
+      <span class="insight-icon">📊</span>
+      <div><strong>V7 종합:</strong> Codex가 속도·설계·토큰 효율 3관왕을 달성했습니다. Repository 인터페이스 도입은 DIP를 실현한 설계로, V9 상호 코드 리뷰 때 다른 AI가 "이 코드는 이미 DI 프레임워크 도입에 준비되어 있다"고 평가할 가능성이 높습니다. Claude는 테스트 호환성을 지키는 실용적 선택을 했으나 nullable로 인한 타입 안전성 약화가 장기적 약점입니다. Gemini는 빌드에 성공했지만, 프롬프트의 핵심 지시인 "기존 테스트 무수정"을 따르지 않아 실험 평가 기준에서 감점 요인이 됩니다. <strong>V5에서 Codex가 선택한 URLStreamHandler 방식보다 이번 Repository 인터페이스가 훨씬 관용적인 설계입니다.</strong></div>
+    </div>
+  </section>
+
+  <footer class="rf">
+    <a href="report_v6.html">← V6 버그 디버깅</a>
+    <a href="report_v8.html">V8 WorkManager →</a>
+  </footer>
+
+</div>
+</body>
+</html>
